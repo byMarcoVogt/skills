@@ -1,6 +1,6 @@
 # think-it-through
 
-![Many scrambled ideas, shapes and notes flow from the left along thin threads into one framed, clear picture on the right.](assets/hero.webp)
+![Many scrambled ideas, shapes and notes flow from the left along thin threads into one framed, clear picture on the right.](../visual-assets/think-it-through/hero.webp)
 
 <h4 align="center">What does it do?</h4>
 
@@ -17,15 +17,15 @@ with the agent, question by question, until the picture is clear.</p>
 
 **The skill offers options with their trade-offs, and recommends one for each question.**
 
-![Real round: Q7 decided, Q2 delegated, then Q9 to Q11, each with lettered options, a trade-off for each and a recommendation with the assumption it rests on.](assets/round.webp)
+![Real round: Q7 decided, Q2 delegated, then Q9 to Q11, each with lettered options, a trade-off for each and a recommendation with the assumption it rests on.](../visual-assets/think-it-through/round.webp)
 
 **The skill checks what it can, in your files and on the web, before it asks.**
 
-![Real round: the agent reports what it read and verified in the user's files, a cost table with prices checked on the day (October 2026), then Q13 with three options and a recommendation.](assets/round-checked.webp)
+![Real round: the agent reports what it read and verified in the user's files, a cost table with prices checked on the day (October 2026), then Q13 with three options and a recommendation.](../visual-assets/think-it-through/round-checked.webp)
 
 **The skill shows a picture, explains what it means, and on hard choices proposes asking other models, where you have access to them.**
 
-![Real round: a rendered diagram of a code gate, an explanation of what it shows and why it matters, then Fable's and Astra's views on Q20 and the agent's own pick.](assets/round-picture-explain.webp)
+![Real round: a rendered diagram of a code gate, an explanation of what it shows and why it matters, then Fable's and Astra's views on Q20 and the agent's own pick.](../visual-assets/think-it-through/round-picture-explain.webp)
 
 ## Install
 

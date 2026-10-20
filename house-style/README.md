@@ -36,9 +36,9 @@ The skill has four files. `SKILL.md` holds seven principles and the hard rules f
 
 | File | For |
 |---|---|
-| `writing.md` | Text in any medium, German and English |
-| `visual.md` | Pages, artifacts, slides, doc layout, diagrams, charts, UI |
-| `conversation.md` | Answers with options, findings, reviews and decisions |
+| `references/writing.md` | Text in any medium, German and English |
+| `references/visual.md` | Pages, artifacts, slides, doc layout, diagrams, charts, UI |
+| `references/conversation.md` | Answers with options, findings, reviews and decisions |
 
 Each reference has rations (pattern, when it is allowed, in what form) and a checklist, and the visual and conversation references add hard rules of their own. The agent writes first, then checks its output against the list, fixes the passage and stops when the checks pass.
 
@@ -48,7 +48,7 @@ The rules are one person's house style. They sit in plain tables and lists, so y
 
 ## Built for Claude Code
 
-house-style is written for Claude Code. The rules for text and pages work in any agent. Some rules in `conversation.md` assume Claude Code features, such as its question panel (`AskUserQuestion`) and commentable artifacts. In another agent, read those rules as intent, or delete them.
+house-style is written for Claude Code. The rules for text and pages work in any agent. Some rules in `references/conversation.md` assume Claude Code features, such as its question panel (`AskUserQuestion`) and commentable artifacts. In another agent, read those rules as intent, or delete them.
 
 ## Install
 

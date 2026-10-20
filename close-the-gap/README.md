@@ -36,7 +36,7 @@ Every sentence earned its place in real runs. Many more were cut.</p>
 
 ## The map
 
-![A map. A small, dark region labelled "My Working Knowledge" holds Verification, Skills and Hooks. A line runs from it through Claude Mods to Learning Layer. Around it lie much larger pale regions, Evals, Tokenconomics and Learning Layer, and many smaller unnamed ones, all inside a wide outer rim.](assets/map.webp)
+![A map. A small, dark region labelled "My Working Knowledge" holds Verification, Skills and Hooks. A line runs from it through Claude Mods to Learning Layer. Around it lie much larger pale regions, Evals, Tokenconomics and Learning Layer, and many smaller unnamed ones, all inside a wide outer rim.](../visual-assets/close-the-gap/map.webp)
 
 Imagine a space. How you work and think is a small shape somewhere in it, the dark region on the map. How the best people in the field work and think is a much larger shape around yours, and its outer rim is the frontier. That rim moves every month.
 

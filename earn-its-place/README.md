@@ -1,28 +1,16 @@
 # Earn its place
 
-<h4 align="center">What does it do?</h4>
-
-<p align="center">It tests whether a skill still earns its place.<br>
-It switches the skill off for a window of real work,<br>
-then rebuilds only what went missing, or retires it.</p>
-
-<h4 align="center">Why switch a skill off?</h4>
-
-<p align="center">Most skills only grow, while the models keep getting better.<br>
-Reading a skill can't tell you whether today's model still needs it.<br>
-Working without it can.</p>
-
-<h4 align="center">What does it look at afterwards?</h4>
-
-<p align="center">The sessions the skill would have touched, judged against what you wrote down at the start.<br>
-And just as hard: needs nobody wrote down.</p>
-
 ```mermaid
 flowchart LR
-  B(Switch off) --> W(Work as usual) --> A(Look back)
-  A -->|something was missing| R(Rebuild that)
+  I(Write down what it is for) --> B(Switch it off) --> W(Work as usual) --> A(Look back)
+  A -->|something was missing| R(Rebuild only that)
   A -->|nothing was missing| X(Retire)
 ```
+
+- Tests whether a skill, or a set of skills, still earns its place. A skill does only if work goes worse without it, so the test is a window of real work, not a reading of the skill.
+- Before the window, it works out with you what the skill is for and writes that into `intent.md`.
+- Afterwards, it judges the sessions the skill would have touched against `intent.md`, and looks just as hard for needs nobody wrote down.
+- Too few relevant sessions mean the window was too short or the skill is no longer needed. It says which it thinks.
 
 ## Install
 
@@ -40,7 +28,7 @@ This needs Node.js 22.20 or newer. Or copy both folders yourself:
 | Codex | `~/.agents/skills/` |
 | Other agents that read `SKILL.md` | that agent's skills folder |
 
-Then ask in plain words, for example "does my review skill still pay off?". It proposes how long the window should be, keeps copies of the sessions and schedules its own return on your machine. A scheduler that runs remotely can't read your transcripts.
+Then ask in plain words, for example "does my review skill still pay off?". It proposes the window, keeps copies of the sessions and schedules its own return on your machine. A scheduler that runs remotely can't read your transcripts.
 
 ## License
 

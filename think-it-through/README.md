@@ -1,4 +1,4 @@
-# think-it-through
+# Think it through
 
 ![Many scrambled ideas, shapes and notes flow from the left along thin threads into one framed, clear picture on the right.](../visual-assets/think-it-through/hero.webp)
 

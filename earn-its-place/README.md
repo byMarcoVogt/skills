@@ -1,4 +1,4 @@
-# earn-its-place
+# Earn its place
 
 Test whether a skill, or a set of skills, still earns its place.
 

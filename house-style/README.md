@@ -1,4 +1,4 @@
-# house-style
+# House style
 
 <h4 align="center">What does it do?</h4>
 

@@ -74,12 +74,10 @@ close-the-gap is a plain [Agent Skill](https://agentskills.io): a folder with a 
 npx skills add byMarcoVogt/skills --skill close-the-gap -g
 ```
 
-This needs Node.js 22.20 or newer. [`skills`](https://github.com/vercel-labs/skills) asks which agents to install for. Add `-a claude-code -a codex` to pick them up front.
-
-**Or copy the folder yourself:**
+Or copy manually:
 
 | Agent | Put the folder in | Start it with |
-|---|---|---|
+|:---:|:---:|:---:|
 | Claude Code | `~/.claude/skills/` | `/close-the-gap` |
 | Codex | `~/.agents/skills/` | `$close-the-gap` |
 | Other agents that read `SKILL.md` | that agent's skills folder | its way of calling a skill |
@@ -90,7 +88,7 @@ It only runs when you call it: Claude Code reads `disable-model-invocation` in `
 ## What's in the folder
 
 | File | What it is |
-|---|---|
+|:---:|:---:|
 | `SKILL.md` | The skill itself |
 | `references/lessons.md` | Your history, one line per session, newest last |
 | `agents/openai.yaml` | Tells Codex to start the skill only when you call it |

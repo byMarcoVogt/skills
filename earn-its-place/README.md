@@ -18,10 +18,10 @@ flowchart LR
 npx skills add byMarcoVogt/skills --skill earn-its-place --skill think-it-through -g
 ```
 
-This needs Node.js 22.20 or newer. Or copy both folders yourself:
+Or copy manually:
 
 | Agent | Put the folders in |
-|---|---|
+|:---:|:---:|
 | Claude Code | `~/.claude/skills/` |
 | Codex | `~/.agents/skills/` |
 | Other agents that read `SKILL.md` | that agent's skills folder |

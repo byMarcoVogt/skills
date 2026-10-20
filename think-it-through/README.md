@@ -35,12 +35,10 @@ think-it-through is a plain [Agent Skill](https://agentskills.io): a folder with
 npx skills add byMarcoVogt/skills --skill think-it-through -g
 ```
 
-This needs Node.js 22.20 or newer. [`skills`](https://github.com/vercel-labs/skills) asks which agents to install for.
-
-Or copy the folder yourself:
+Or copy manually:
 
 | Agent | Put the folder in |
-|---|---|
+|:---:|:---:|
 | Claude Code | `~/.claude/skills/` |
 | Codex | `~/.agents/skills/` |
 | Other agents that read `SKILL.md` | that agent's skills folder |

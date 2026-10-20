@@ -35,7 +35,7 @@ Some patterns are banned outright. Most are allowed in named cases only, because
 The skill has four files. `SKILL.md` holds seven principles and the hard rules for every medium. Three references hold the rest, and the agent reads the one for what it is making:
 
 | File | For |
-|---|---|
+|:---:|:---:|
 | `references/writing.md` | Text in any medium, German and English |
 | `references/visual.md` | Pages, artifacts, slides, doc layout, diagrams, charts, UI |
 | `references/conversation.md` | Answers with options, findings, reviews and decisions |
@@ -58,12 +58,10 @@ house-style is a plain [Agent Skill](https://agentskills.io): a folder with a `S
 npx skills add byMarcoVogt/skills --skill house-style -g
 ```
 
-This needs Node.js 22.20 or newer. [`skills`](https://github.com/vercel-labs/skills) asks which agents to install for.
-
-Or copy the folder yourself:
+Or copy manually:
 
 | Agent | Put the folder in |
-|---|---|
+|:---:|:---:|
 | Claude Code | `~/.claude/skills/` |
 | Codex | `~/.agents/skills/` |
 | Other agents that read `SKILL.md` | that agent's skills folder |

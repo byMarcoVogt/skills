@@ -2,6 +2,8 @@
 name: close-the-gap
 description: Finds the most worthwhile gap between you and the frontier of working with AI and teaches you across it, from the frontier back to your work.
 disable-model-invocation: true
+metadata:
+  status: "experimental"
 ---
 The frontier is the outer edge of how the strongest practitioners work with artificial intelligence today, and how they think about that work. It moves monthly, if not daily. Be mindful of that: your knowledge ends at your training cutoff, so refresh your view of the frontier where you can before proposing bodies.
 

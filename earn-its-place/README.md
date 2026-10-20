@@ -1,28 +1,46 @@
 # Earn its place
 
-Test whether a skill, or a set of skills, still earns its place.
+<h4 align="center">What does it do?</h4>
 
-Most skills only grow. Nobody checks whether today's model still needs them. This skill checks by switching them off for a window of real work, then coming back to see what went missing.
+<p align="center">It tests whether a skill still earns its place.<br>
+It switches the skill off for a window of real work,<br>
+then rebuilds only what went missing, or retires it.</p>
+
+<h4 align="center">Why switch a skill off?</h4>
+
+<p align="center">Most skills only grow, while the models keep getting better.<br>
+Reading a skill can't tell you whether today's model still needs it.<br>
+Working without it can.</p>
+
+<h4 align="center">What does it look at afterwards?</h4>
+
+<p align="center">The sessions the skill would have touched, judged against what you wrote down at the start.<br>
+And just as hard: needs nobody wrote down.</p>
 
 ```mermaid
 flowchart LR
-  A[Before: think it through, write intent.md] --> B[Switch off, keep the sessions, schedule the return]
-  B --> C[Window of real work]
-  C --> D[After: audit the related sessions]
-  D --> E{Anything missing?}
-  E -->|yes| F[Rebuild only that]
-  E -->|no| G[Retire]
+  B(Switch off) --> W(Work as usual) --> A(Look back)
+  A -->|something was missing| R(Rebuild that)
+  A -->|nothing was missing| X(Retire)
 ```
 
-The audit also looks for needs nobody wrote down, which the window turned up.
+## Install
 
-## Use it
+earn-its-place uses [think-it-through](../think-it-through) from this repo to find out what your skills are for, so install both.
 
-Install it together with [think-it-through](../think-it-through), which it uses to find out what your skills are for. Then ask in plain words, for example "does my review skill still pay off?". The skill proposes how long the window should be. It keeps copies of the sessions and schedules its own return on your machine. A scheduler that runs remotely can't read your transcripts.
+```bash
+npx skills add byMarcoVogt/skills --skill earn-its-place --skill think-it-through -g
+```
 
-## Status
+This needs Node.js 22.20 or newer. Or copy both folders yourself:
 
-2.0, not yet run on a real trial. Four models rebuilt the skill blind from the same idea and then reviewed the short version blind. Every line traces back to that, to a repeated miss in earlier skill reviews, or to a call I made. Lines that were cut on purpose include a prebuilt hook and scheduled task: one sentence lets the model set them up.
+| Agent | Put the folders in |
+|---|---|
+| Claude Code | `~/.claude/skills/` |
+| Codex | `~/.agents/skills/` |
+| Other agents that read `SKILL.md` | that agent's skills folder |
+
+Then ask in plain words, for example "does my review skill still pay off?". It proposes how long the window should be, keeps copies of the sessions and schedules its own return on your machine. A scheduler that runs remotely can't read your transcripts.
 
 ## License
 

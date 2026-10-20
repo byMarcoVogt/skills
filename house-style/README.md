@@ -2,8 +2,9 @@
 
 <h4 align="center">What does it do?</h4>
 
-<p align="center">It keeps a model's default habits out of what it writes and builds for you:<br>
-in text, in pages, decks and docs, and in how it puts questions to you.</p>
+<p align="center">It holds the agent to your style in everything it writes and builds.<br>
+No dash in mid-sentence, no coloured bar beside every box,<br>
+no code you have to ask about, no wall of options at once.</p>
 
 <h4 align="center">Does it teach the model to write?</h4>
 

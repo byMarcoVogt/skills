@@ -7,30 +7,30 @@
 <b>Your Working Knowledge</b></p>
 
 <p align="center"><i>What don't you know you're missing?<br>
-close-the-gap looks for it at the frontier of AI,<br>
+Close the gap looks for it at the frontier of AI,<br>
 and teaches you what matters most for your work.</i></p>
 
 ---
 
-<h3 align="center">What happens when I call it?</h3>
+<h4 align="center">What happens when I call it?</h4>
 
 <p align="center">Call it at the end of a session of real work.<br>
 It proposes a few things worth learning.<br>
 You pick one. It teaches it over many prompts,<br>
 from the frontier back to your work.</p>
 
-<h3 align="center">How does it know what I'm missing?</h3>
+<h4 align="center">How does it know what I'm missing?</h4>
 
 <p align="center">It reads the work you just did and your history in <code>lessons.md</code>.<br>
 It refreshes its view of the frontier where it can.<br>
 If it has little to go on, it asks you.</p>
 
-<h3 align="center">Why is this skill so short?</h3>
+<h4 align="center">Why is this skill so short?</h4>
 
 <p align="center"><code>SKILL.md</code> is a handful of paragraphs, on purpose.<br>
 It names no tools and no topics. Those would be out of date within months.<br>
 It describes the space and lets the model find its own way.<br>
-Every sentence earned its place in real runs. Many more were cut.</p>
+Every sentence held up in real runs. Many more were cut.</p>
 
 ---
 
@@ -96,4 +96,4 @@ Or copy manually:
 
 ## License
 
-[MIT](LICENSE).
+[MIT](LICENSE)

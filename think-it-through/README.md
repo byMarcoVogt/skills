@@ -13,6 +13,14 @@ until scattered ideas and thoughts form one shared understanding.</p>
 There is no shortcut to it. You reach it only by working closely<br>
 with the agent, question by question, until the picture is clear.</p>
 
+## How to use it
+
+**Agent invoked**<br>
+Your agent picks it up when your request matches, for example "interview me", "grill me" or a pasted brain dump, also mid-session.
+
+**You invoke it**<br>
+`/think-it-through` in Claude Code, `$think-it-through` in Codex.
+
 ## Real use
 
 **The skill offers options with their trade-offs, and recommends one for each question.**
@@ -29,8 +37,6 @@ with the agent, question by question, until the picture is clear.</p>
 
 ## Install
 
-think-it-through is a plain [Agent Skill](https://agentskills.io): a folder with a `SKILL.md`.
-
 ```bash
 npx skills add byMarcoVogt/skills --skill think-it-through -g
 ```
@@ -42,8 +48,6 @@ Or copy manually:
 | Claude Code | `~/.claude/skills/` |
 | Codex | `~/.agents/skills/` |
 | Other agents that read `SKILL.md` | that agent's skills folder |
-
-Your agent picks it up when your request matches, for example "interview me", "grill me" or a pasted brain dump, including mid-session. You can also call it by name: `/think-it-through` in Claude Code, `$think-it-through` in Codex.
 
 ## License
 

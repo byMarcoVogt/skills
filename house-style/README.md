@@ -16,6 +16,14 @@ that come back in every project. This skill names them so they stay out.</p>
 1,087 corrections, choices and approvals since August 2026, from daily work<br>
 in German and English, grouped and checked against each other.</p>
 
+## How to use it
+
+**Agent invoked**<br>
+Your agent picks it up whenever it writes or builds something for you. For stricter adherence, point to the skill from your `CLAUDE.md` or `AGENTS.md`, for example *"Follow the house-style skill for everything you write or build."*
+
+**You invoke it**<br>
+`/house-style` in Claude Code, `$house-style` in Codex, to check a text or page.
+
 ## What it catches
 
 *Real cases from that feedback. The author's words are quoted as written.*
@@ -52,8 +60,6 @@ house-style is written for Claude Code. The rules for text and pages work in any
 
 ## Install
 
-house-style is a plain [Agent Skill](https://agentskills.io): a folder with a `SKILL.md`.
-
 ```bash
 npx skills add byMarcoVogt/skills --skill house-style -g
 ```
@@ -65,10 +71,6 @@ Or copy manually:
 | Claude Code | `~/.claude/skills/` |
 | Codex | `~/.agents/skills/` |
 | Other agents that read `SKILL.md` | that agent's skills folder |
-
-Your agent picks it up when it writes or builds something for you. You can also call it by name, `/house-style` in Claude Code or `$house-style` in Codex, to check a text or page.
-
-For stricter adherence, point to the skill from your `CLAUDE.md` or `AGENTS.md`, for example: *"Follow the house-style skill for everything you write or build."*
 
 ## License
 

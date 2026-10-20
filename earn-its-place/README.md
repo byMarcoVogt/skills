@@ -12,6 +12,14 @@ flowchart LR
 - Afterwards, it judges the sessions the skill would have touched against `intent.md`, and looks just as hard for needs nobody wrote down.
 - Too few relevant sessions mean the window was too short or the skill is no longer needed. It says which it thinks.
 
+## How to use it
+
+**Agent invoked**<br>
+Your agent picks it up when you ask whether a skill still pays off, and when a trial's window is up and the scheduled session comes back.
+
+**You invoke it**<br>
+`/earn-its-place` in Claude Code, `$earn-its-place` in Codex.
+
 ## Install
 
 ```bash

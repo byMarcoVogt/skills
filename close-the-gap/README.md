@@ -34,6 +34,14 @@ Every sentence earned its place in real runs. Many more were cut.</p>
 
 ---
 
+## How to use it
+
+**Agent invoked**<br>
+Never. Claude Code reads `disable-model-invocation` in `SKILL.md` and Codex reads `agents/openai.yaml`, so it does not start on its own in the middle of other work.
+
+**You invoke it**<br>
+`/close-the-gap` in Claude Code, `$close-the-gap` in Codex, best at the end of a session of real work. In an agent that only reads `AGENTS.md`, add one line: *"When I ask to close the gap, read `close-the-gap/SKILL.md` and follow it."*
+
 ## The map
 
 ![A map. A small, dark region labelled "My Working Knowledge" holds Verification, Skills and Hooks. A line runs from it through Claude Mods to Learning Layer. Around it lie much larger pale regions, Evals, Tokenconomics and Learning Layer, and many smaller unnamed ones, all inside a wide outer rim.](../visual-assets/close-the-gap/map.webp)
@@ -66,24 +74,17 @@ The file ships with only its header. Your lines are stored locally, in the skill
 
 ## Install
 
-close-the-gap is a plain [Agent Skill](https://agentskills.io): a folder with a `SKILL.md`. Any agent that reads that format can run it.
-
-**One command, for the agents you use:**
-
 ```bash
 npx skills add byMarcoVogt/skills --skill close-the-gap -g
 ```
 
 Or copy manually:
 
-| Agent | Put the folder in | Start it with |
-|:---:|:---:|:---:|
-| Claude Code | `~/.claude/skills/` | `/close-the-gap` |
-| Codex | `~/.agents/skills/` | `$close-the-gap` |
-| Other agents that read `SKILL.md` | that agent's skills folder | its way of calling a skill |
-| An agent that only reads `AGENTS.md` | anywhere | add one line to `AGENTS.md`: *"When I ask to close the gap, read `close-the-gap/SKILL.md` and follow it."* |
-
-It only runs when you call it: Claude Code reads `disable-model-invocation` in `SKILL.md`, and Codex reads `agents/openai.yaml`. Neither will start it on its own in the middle of other work.
+| Agent | Put the folder in |
+|:---:|:---:|
+| Claude Code | `~/.claude/skills/` |
+| Codex | `~/.agents/skills/` |
+| Other agents that read `SKILL.md` | that agent's skills folder |
 
 ## What's in the folder
 

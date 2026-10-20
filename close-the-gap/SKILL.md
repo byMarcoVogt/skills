@@ -4,6 +4,7 @@ description: Finds the most worthwhile gap between you and the frontier of worki
 disable-model-invocation: true
 metadata:
   status: "experimental"
+  benchmark: "21 lines, 1743 bytes"
 ---
 The frontier is the outer edge of how the strongest practitioners work with artificial intelligence today, and how they think about that work. It moves monthly, if not daily. Be mindful of that: your knowledge ends at your training cutoff, so refresh your view of the frontier where you can before proposing bodies.
 

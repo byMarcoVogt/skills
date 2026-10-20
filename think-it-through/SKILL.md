@@ -3,6 +3,7 @@ name: think-it-through
 description: Interviews the user about an idea, plan or decision, one question at a time, until both share an understanding of it. Use when the user wants to brainstorm, explore, think through, rethink or stress-test something, says "interview me" or "grill me", or pastes a brain dump to sort out, also mid-session.
 metadata:
   version: "2.0"
+  benchmark: "39 lines, 3946 bytes"
   origin: "Inspired by grill-me, github.com/mattpocock/skills (MIT)"
 ---
 

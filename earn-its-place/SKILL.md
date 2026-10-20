@@ -3,6 +3,7 @@ name: earn-its-place
 description: Tests whether a skill, or a set of skills, still earns its place. Switches it off for a window of real work, comes back when the window ends, and rebuilds only what was missing or retires it. Use when the user wants to write, rework, test or retire a skill, asks whether one still pays off, or when a trial's window is up.
 metadata:
   version: "2.0"
+  benchmark: "17 lines, 1479 bytes"
 ---
 
 Work with me on one skill or a set of them. A skill earns its place only if work goes worse without it. Find out in two passes, with a window of real work in between.

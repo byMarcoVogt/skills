@@ -14,17 +14,17 @@ Agent Skills I built for my own daily work with Claude Code. Each one is a folde
 **Skills have to change faster than models.** Every skill is a hypothesis that the model can't do this on its own yet. Instructions written for previous models become dead weight, or even gate what newer models could do for you.
 
 **1. A skill earns its place only if work goes worse without it.**
-- Real use is the primary evidence. [Earn its place](earn-its-place) switches a skill off for a window of real work, then rebuilds what went missing or retires the skill.
-- What the model can do on its own drops out.
+- Real use is the primary evidence. [Earn its place](earn-its-place) switches a skill off for a window of real work, then rebuilds what went missing or added value, or retires the skill.
 
 *Example:* House style comes from 1,087 of my own corrections, choices and approvals since August 2026.
 
 **2. A skill is valuable real estate.**
 - Each word has to carry meaning and invoke the right behavior.
-- Each SKILL.md records its size at the last major release in `metadata.benchmark`. Minor versions stay at or under it.
-- To add, condense first or cut what is no longer needed.
-- What became deterministic is left out of the text and moves into code or hooks.
-- Only a new major version resets the benchmark, ideally after an [Earn its place](earn-its-place) trial.
+- The benchmark: each SKILL.md records its size at the last major release in `metadata.benchmark`.
+  - Minor versions stay at or under it.
+  - To add, condense first or cut what is no longer needed.
+  - What became deterministic is left out of the text and moves into code or hooks.
+  - Only a new major version resets it, ideally after an [Earn its place](earn-its-place) trial.
 
 *Example:* Earn its place came from such a reset. It replaced my 106-line skill-writer with 17 lines.
 

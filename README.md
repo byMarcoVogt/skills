@@ -11,7 +11,7 @@ Agent Skills I built for my own daily work with Claude Code. Each one is a folde
 
 ## Design principles
 
-**Skills have to change faster than models.** Every skill is a hypothesis that the model can't do this on its own yet. Instructions written for previous models become dead weight, or even gate what newer models can do.
+**Skills have to change faster than models.** Every skill is a hypothesis that the model can't do this on its own yet. Instructions written for previous models become dead weight, or even gate what newer models could do for you.
 
 **1. A skill earns its place only if work goes worse without it.**
 - Real use is the evidence, not a synthetic test. Earn its place switches a skill off for a window of real work, then rebuilds what went missing or retires the skill.

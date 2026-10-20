@@ -74,4 +74,4 @@ Or copy manually:
 
 ## License
 
-MIT. Forked from [unslop](https://github.com/cursor/plugins/blob/main/pstack/skills/unslop/SKILL.md) in pstack by Lauren Tan (MIT). Informed by Wikipedia's [Signs of AI writing](https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing) and [Anzeichen für KI-generierte Inhalte](https://de.wikipedia.org/wiki/Wikipedia:Anzeichen_f%C3%BCr_KI-generierte_Inhalte). No text from either page is copied.
+MIT. Inspired by [unslop](https://github.com/cursor/plugins/blob/main/pstack/skills/unslop/SKILL.md) in pstack by Lauren Tan (MIT). Informed by Wikipedia's [Signs of AI writing](https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing) and [Anzeichen für KI-generierte Inhalte](https://de.wikipedia.org/wiki/Wikipedia:Anzeichen_f%C3%BCr_KI-generierte_Inhalte). No text from either page is copied.

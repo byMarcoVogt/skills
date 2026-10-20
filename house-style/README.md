@@ -2,7 +2,7 @@
 
 <h4 align="center">What does it do?</h4>
 
-<p align="center">It holds the agent to your style in everything it writes and builds.<br>
+<p align="center">It holds the agent to your style in how it writes, designs and communicates.<br>
 No dash in mid-sentence, no coloured bar beside every box,<br>
 no code you have to ask about, no wall of options at once.</p>
 

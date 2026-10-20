@@ -6,7 +6,7 @@ Agent Skills I built for my own daily work with Claude Code. Each one is a folde
 |---|---|
 | [Think it through](think-it-through) | Interviews you about an idea, plan or decision, one question at a time, until you and the agent reach a shared understanding. |
 | [Close the gap](close-the-gap) `experimental` | Finds the most worthwhile gap between how you work with AI and the frontier. Then it teaches you about it, from the frontier back to your work. |
-| [House style](house-style) | Holds the agent to your style in everything it writes and builds, from a single sentence to a full page, and in how it puts decisions to you. |
+| [House style](house-style) | Holds the agent to your style in how it writes, designs and communicates. |
 | [Earn its place](earn-its-place) | Switches a skill off for a window of real work, then rebuilds only what went missing, or retires it. |
 
 ## Design principles

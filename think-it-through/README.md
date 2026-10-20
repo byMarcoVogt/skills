@@ -4,7 +4,7 @@
 
 <h4 align="center">What does it do?</h4>
 
-<p align="center">It interviews you about an idea, plan or decision, one decision at a time,<br>
+<p align="center">It interviews you about an idea, plan or decision, one question at a time,<br>
 until scattered ideas and thoughts form one shared understanding.</p>
 
 <h4 align="center">Why start with alignment?</h4>

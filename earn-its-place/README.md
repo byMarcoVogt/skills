@@ -2,23 +2,25 @@
 
 ```mermaid
 flowchart LR
-  I(Write down what it is for) --> B(Switch it off) --> W(Work as usual) --> A(Look back)
-  A -->|something was missing| R(Rebuild only that)
-  A -->|nothing was missing| X(Retire)
+  subgraph Before
+    I(Write down what the skill is for in intent.md) --> O(Switch the skill off)
+  end
+  subgraph Window["Window of real work"]
+    W(Work without the skill)
+  end
+  subgraph After
+    J(Judge the window's sessions against intent.md)
+  end
+  O --> W --> J
+  J -->|something was missing| R(Rebuild only what was missing)
+  J -->|nothing was missing| X(Retire the skill)
 ```
 
-- Tests whether a skill, or a set of skills, still earns its place. A skill does only if work goes worse without it, so the test is a window of real work, not a reading of the skill.
-- Before the window, it uses [think-it-through](../think-it-through) from this repo to work out with you what the skill is for, and writes that into `intent.md`. The install below adds both.
-- Afterwards, it judges the sessions the skill would have touched against `intent.md`, and looks just as hard for needs nobody wrote down.
-- Too few relevant sessions mean the window was too short or the skill is no longer needed. It says which it thinks.
+Tests whether a skill, or a set of skills, still earns its place. A skill does only if work goes worse without it, so the test is a window of real work, not a reading of the skill.
 
-## How to use it
-
-**Agent invoked**<br>
-Your agent picks it up when you ask whether a skill still pays off, and when a trial's window is up and the scheduled session comes back.
-
-**You invoke it**<br>
-`/earn-its-place` in Claude Code, `$earn-its-place` in Codex.
+- **Before**: with [think-it-through](../think-it-through) from this repo, Earn its place works out with you what the skill is for and writes that into `intent.md`. Then it proposes a test plan and, once you agree, switches the skill off. The install below adds both skills.
+- **Window**: you work as you would anyway. Earn its place keeps copies of the sessions and schedules the second pass on this machine.
+- **After**: the second pass judges the sessions the skill would have touched against `intent.md`, and looks just as hard for needs nobody wrote down. If there were too few relevant sessions, the window was too short or the skill is no longer needed, and the second pass says which.
 
 ## Install
 

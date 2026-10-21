@@ -10,37 +10,9 @@
 Close the gap looks for it at the frontier of AI,<br>
 and teaches you what matters most for your work.</i></p>
 
----
-
-<h4 align="center">What happens when I call it?</h4>
-
-<p align="center">Call it at the end of a session of real work.<br>
-It proposes a few things worth learning.<br>
-You pick one. It teaches it over many prompts,<br>
-from the frontier back to your work.</p>
-
-<h4 align="center">How does it know what I'm missing?</h4>
-
-<p align="center">It reads the work you just did and your history in <code>lessons.md</code>.<br>
-It refreshes its view of the frontier where it can.<br>
-If it has little to go on, it asks you.</p>
-
-<h4 align="center">Why is this skill so short?</h4>
-
-<p align="center"><code>SKILL.md</code> is a handful of paragraphs, on purpose.<br>
-It names no tools and no topics. Those would be out of date within months.<br>
-It describes the space and lets the model find its own way.<br>
-Every sentence held up in real runs. Many more were cut.</p>
-
----
-
-## How to use it
-
-**Agent invoked**<br>
-Never. Claude Code reads `disable-model-invocation` in `SKILL.md` and Codex reads `agents/openai.yaml`, so it does not start on its own in the middle of other work.
-
-**You invoke it**<br>
-`/close-the-gap` in Claude Code, `$close-the-gap` in Codex, best at the end of a session of real work. In an agent that only reads `AGENTS.md`, add one line: *"When I ask to close the gap, read `close-the-gap/SKILL.md` and follow it."*
+<p align="center">At the end of a session of real work, Close the gap reads what you did<br>
+and proposes a few bodies of knowledge worth learning next.<br>
+You pick one, and it teaches you over many prompts.</p>
 
 ## The map
 
@@ -48,7 +20,7 @@ Never. Claude Code reads `disable-model-invocation` in `SKILL.md` and Codex read
 
 Imagine a space. How you work and think is a small shape somewhere in it, the dark region on the map. How the best people in the field work and think is a much larger shape around yours, and its outer rim is the frontier. That rim moves every month.
 
-The space between is not empty. It is full of bodies of knowledge, some of them science, some of them practice, of different sizes, overlapping and connected. Each session, the model proposes a few of them, you pick one, and your own shape grows by that much.
+The space between is not empty. It is full of bodies of knowledge, some of them science, some of them practice, of different sizes, overlapping and connected. Each session adds one of them, and your own shape grows by that much.
 
 To find its way around, the model looks at the space along three axes:
 

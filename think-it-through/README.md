@@ -13,14 +13,6 @@ until scattered ideas and thoughts form one shared understanding.</p>
 There is no shortcut to it. You reach it only by working closely<br>
 with the agent, question by question, until the picture is clear.</p>
 
-## How to use it
-
-**Agent invoked**<br>
-Your agent picks it up when your request matches, for example "interview me", "grill me" or a pasted brain dump, also mid-session.
-
-**You invoke it**<br>
-`/think-it-through` in Claude Code, `$think-it-through` in Codex.
-
 ## Real use
 
 **The skill offers options with their trade-offs, and recommends one for each question.**

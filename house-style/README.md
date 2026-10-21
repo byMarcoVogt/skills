@@ -17,14 +17,6 @@ that come back in every project. This skill names them so they stay out.</p>
 1,087 corrections, choices and approvals since August 2026, from daily work<br>
 in German and English, grouped and checked against each other.</p>
 
-## How to use it
-
-**Agent invoked**<br>
-Your agent picks it up whenever it writes or builds something for you. For stricter adherence, point to the skill from your `CLAUDE.md` or `AGENTS.md`, for example *"Follow the house-style skill for everything you write or build."*
-
-**You invoke it**<br>
-`/house-style` in Claude Code, `$house-style` in Codex, to check a text or page.
-
 ## What it catches
 
 *Real cases from that feedback. The author's words are quoted as written.*

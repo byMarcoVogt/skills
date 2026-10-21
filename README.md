@@ -42,6 +42,16 @@ One skill only:
 npx skills add byMarcoVogt/skills --skill think-it-through
 ```
 
+## How to use the skills
+
+Your agent starts a skill on its own when your request matches it. You can also call one by name: `/think-it-through` in Claude Code, `$think-it-through` in Codex.
+
+- **Close the gap** starts only when you call it, best at the end of a session of real work.
+- **House style** applies whenever the agent writes or builds something for you. For stricter adherence, point to it from your `CLAUDE.md` or `AGENTS.md`, for example *"Follow the house-style skill for everything you write or build."*
+- **Earn its place** comes back on its own when a trial's window ends.
+
+In an agent that only reads `AGENTS.md`, add one line per skill, for example *"When I ask to close the gap, read `close-the-gap/SKILL.md` and follow it."*
+
 ## License
 
 [MIT](LICENSE)

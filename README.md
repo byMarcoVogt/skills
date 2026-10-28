@@ -34,7 +34,7 @@ Agent Skills I built for my own daily work with Claude Code. Each one is a folde
 npx skills add byMarcoVogt/skills
 ```
 
-[`skills`](https://github.com/vercel-labs/skills) asks which skills to install and for which agents. It needs Node.js 22.20 or newer.
+[`npx skills`](https://github.com/vercel-labs/skills), Vercel's installer, asks which skills to install and for which agents. It needs Node.js 22.20 or newer.
 
 One skill only:
 

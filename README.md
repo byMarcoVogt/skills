@@ -44,7 +44,18 @@ npx skills add byMarcoVogt/skills --skill think-it-through
 
 ## How to use the skills
 
-Your agent starts a skill on its own when your request matches it. You can also call one by name: `/think-it-through` in Claude Code, `$think-it-through` in Codex.
+Start a new agent session after installing, so the agent loads the skills.
+
+**Let the agent pick.** Ask for what you want in your own words. The agent compares your request with each skill's description and starts the one that fits. *"Grill me on this plan"* starts Think it through.
+
+**Call one by name.** Type the skill's name with your agent's prefix:
+
+| Agent | Type |
+|---|---|
+| Claude Code | `/think-it-through` |
+| Codex | `$think-it-through` |
+
+[Close the gap](close-the-gap) starts only by name. Its `disable-model-invocation: true` keeps the agent from picking it.
 
 ## License
 

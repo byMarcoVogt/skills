@@ -3,24 +3,37 @@
 ```mermaid
 flowchart LR
   subgraph Before
-    I(Write down what the skill is for in intent.md) --> O(Switch the skill off)
+    I(Settle what the skill is for in intent.md) --> P(Pre-register one change in trial.md)
   end
   subgraph Window["Window of real work"]
-    W(Work without the skill)
+    W(Work with the change)
   end
   subgraph After
-    J(Judge the window's sessions against intent.md)
+    J(Evaluate the window against the baseline, intent.md and trial.md)
   end
-  O --> W --> J
+  P --> W --> J
+  J -->|the change holds| K(Keep the change)
   J -->|something was missing| R(Rebuild only what was missing)
-  J -->|nothing was missing| X(Retire the skill)
+  J -->|nothing was missing, or unclear| X(Retire the skill)
 ```
 
 Tests whether a skill, or a set of skills, still earns its place. A skill does only if work goes worse without it, so the test is a window of real work, not a reading of the skill.
 
-- **Before**: with [think-it-through](../think-it-through) from this repo, Earn its place works out with you what the skill is for and writes that into `intent.md`. Then it proposes a test plan and, once you agree, switches the skill off. The install below adds both skills.
-- **Window**: you work as you would anyway. Earn its place keeps copies of the sessions and schedules the second pass on this machine.
-- **After**: the second pass judges the sessions the skill would have touched against `intent.md`, and looks just as hard for needs nobody wrote down. If there were too few relevant sessions, the window was too short or the skill is no longer needed, and the second pass says which.
+- **Before**: with [think-it-through](../think-it-through) from this repo, you and Earn its place settle whether you need the skill and what it should do. The outcome goes into `intent.md`. If the skill never fires or is covered elsewhere, it proposes retiring it right away. Otherwise it proposes one ablation or variant and pre-registers it in `trial.md`. The install below adds both skills.
+- **Window**: you work as you would anyway. Earn its place applies the change in every agent, keeps recent sessions as the baseline, copies the window's sessions and schedules the second pass on this machine.
+- **After**: the second pass evaluates the window against the baseline, `intent.md` and `trial.md`. It counts where you had to correct or re-explain, and looks just as hard for needs nobody wrote down. If you switched back during the window, that is the verdict. If the result is unclear, it proposes retiring the skill, unless `intent.md` names a rare harm the window couldn't show.
+
+Two files, kept outside the skill folders:
+
+- **`intent.md`**: the outcome of your discussion. Do you need the skill, what should it do, what do you like about it. It outlasts single trials.
+- **`trial.md`**: one trial. Before the window, its criteria (ex ante). After the window, its evaluation and verdict (ex post).
+
+Terms the skill uses:
+
+- **Ablation**: one part removed, the rest unchanged. Switching the whole skill off is the largest ablation. An ablation only has to do no worse.
+- **Variant**: one part condensed or rewritten. Condensing only has to do no worse. A rewrite has to do better where `trial.md` said it would.
+- **Pre-register**: write down before the window what should go worse or better and how many sessions it takes to decide, so the result can't be read to fit afterwards.
+- **Baseline**: recent sessions with the skill as it was, the point of comparison for the window.
 
 ## Install
 

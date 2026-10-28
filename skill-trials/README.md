@@ -1,4 +1,6 @@
-# Earn its place
+# Skill trials
+
+Previously Earn its place (`/earn-its-place`).
 
 ```mermaid
 flowchart LR
@@ -19,11 +21,11 @@ flowchart LR
 
 Tests whether a skill, or a set of skills, still earns its place. A skill does only if work goes worse without it, so the test is a window of real work, not a reading of the skill.
 
-- **Before**: with [think-it-through](../think-it-through) from this repo, you and Earn its place settle whether you need the skill and what it should do. The outcome goes into `intent.md`. If the skill never fires or is covered elsewhere, it proposes retiring it right away. Otherwise it proposes one ablation or variant and pre-registers it in `trial.md`. The install below adds both skills.
-- **Window**: you work as you would anyway. Earn its place applies the change in every agent, keeps recent sessions as the baseline, copies the window's sessions and schedules the second pass on this machine.
-- **After**: the second pass evaluates the window against the baseline, `intent.md` and `trial.md`. It counts where you had to correct or re-explain, and looks just as hard for needs nobody wrote down. If you switched back during the window, that is the verdict. If the result is unclear, it proposes retiring the skill, unless `intent.md` names a rare harm the window couldn't show.
+- **Before**: with [think-it-through](../think-it-through) from this repo, you and Skill trials settle whether you need the skill and what it should do. The outcome goes into `intent.md`. If the skill never fires or is covered elsewhere, it proposes retiring it right away. Otherwise it proposes one ablation or variant and pre-registers it in `trial.md`. The install below adds both skills.
+- **Window**: you work as you would anyway. Skill trials makes the change in every agent that has the skill and keeps recent sessions that used it as the baseline. A scheduled task on this machine copies the window's sessions and starts the second pass when the window ends.
+- **After**: the second pass evaluates the window against the baseline, `intent.md` and `trial.md`. It audits the transcripts of both for how often you had to intervene, by correcting or re-explaining, and looks just as hard for needs nobody wrote down. If you switched back during the window, that is the verdict. If the result is unclear, it proposes retiring the skill, unless `intent.md` names a rare harm the window couldn't show.
 
-Two files, kept outside the skill folders:
+Two files in `~/skill-trials/<skill>/`, outside the skill folders, so a change to a skill can't touch them:
 
 - **`intent.md`**: the outcome of your discussion. Do you need the skill, what should it do, what do you like about it. It outlasts single trials.
 - **`trial.md`**: one trial. Before the window, its criteria (ex ante). After the window, its evaluation and verdict (ex post).
@@ -38,7 +40,7 @@ Terms the skill uses:
 ## Install
 
 ```bash
-npx skills add byMarcoVogt/skills --skill earn-its-place --skill think-it-through -g
+npx skills add byMarcoVogt/skills --skill skill-trials --skill think-it-through -g
 ```
 
 Or copy manually:

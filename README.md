@@ -57,6 +57,10 @@ Start a new agent session after installing, so the agent loads the skills.
 
 [Close the gap](close-the-gap) starts only by name. Its `disable-model-invocation: true` keeps the agent from picking it.
 
+## Mods
+
+Mods change the Claude desktop app's own interface, beside the skills. They live in [byMarcoVogt/mods](https://github.com/byMarcoVogt/mods), starting with Token Report: context, cache and cost above the prompt.
+
 ## License
 
 [MIT](LICENSE)

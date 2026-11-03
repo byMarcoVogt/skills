@@ -46,6 +46,10 @@ npx skills add byMarcoVogt/skills --skill think-it-through
 
 Your agent starts a skill on its own when your request matches it. You can also call one by name: `/think-it-through` in Claude Code, `$think-it-through` in Codex.
 
+## Mods
+
+Mods change the Claude desktop app's own interface, beside the skills. They live in [byMarcoVogt/mods](https://github.com/byMarcoVogt/mods), starting with Token Report: context, cache and cost above the prompt.
+
 ## License
 
 [MIT](LICENSE)

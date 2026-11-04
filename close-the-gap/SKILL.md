@@ -1,13 +1,13 @@
 ---
 name: close-the-gap
-description: Finds the most worthwhile gap between you and the frontier of working with AI and teaches you across it, from the frontier back to your work.
+description: Finds the most worthwhile gap between you and the frontier of working with AI and teaches you across it. Starts only by name (/close-the-gap or $close-the-gap).
 disable-model-invocation: true
 metadata:
-  version: "0.6"
+  version: "0.7"
   status: "experimental"
   benchmark: "22 lines, 1760 bytes"
 ---
-The frontier is the outer edge of how the strongest practitioners work with artificial intelligence today, and how they think about that work. It moves monthly, if not daily. Be mindful of that: your knowledge ends at your training cutoff, so refresh your view of the frontier where you can before proposing bodies.
+The frontier is the outer edge of how the strongest practitioners work with artificial intelligence today, and how they think about that work. It moves monthly, if not daily. Your knowledge ends at your training cutoff, so refresh your view of the frontier where you can before proposing bodies.
 
 Picture a space. How I work and think is a small shape in it. Theirs is a far larger shape around it, and the frontier is its surface. The gap between is not empty. It holds bodies of knowledge, some science, some practice, of different size and form, overlapping and connected.
 

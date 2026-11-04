@@ -1,6 +1,6 @@
 # Skills
 
-Agent Skills I built for my own daily work with Claude Code. Each one is a folder with a `SKILL.md` and its own README.
+Agent Skills I built for my own daily work with Claude Code and Codex. Each one is a folder with a `SKILL.md` and its own README.
 
 | Skill | What it does |
 |---|---|
@@ -31,31 +31,16 @@ Agent Skills I built for my own daily work with Claude Code. Each one is a folde
 ## Install
 
 ```bash
+# all skills, you pick in a menu
 npx skills add byMarcoVogt/skills
+
+# one skill, no questions (also for agents)
+npx skills add byMarcoVogt/skills --skill think-it-through -a claude-code -g -y
 ```
 
-[`npx skills`](https://github.com/vercel-labs/skills), Vercel's installer, asks which skills to install and for which agents. It needs Node.js 22.20 or newer.
+For Codex, use `-a codex`. [`npx skills`](https://github.com/vercel-labs/skills) is Vercel's installer and needs Node.js 22.20 or newer. Skill trials needs Think it through.
 
-One skill only:
-
-```bash
-npx skills add byMarcoVogt/skills --skill think-it-through
-```
-
-## How to use the skills
-
-Start a new agent session after installing, so the agent loads the skills.
-
-**Let the agent pick.** Ask for what you want in your own words. The agent compares your request with each skill's description and starts the one that fits. *"Grill me on this plan"* starts Think it through.
-
-**Call one by name.** Type the skill's name with your agent's prefix:
-
-| Agent | Type |
-|---|---|
-| Claude Code | `/think-it-through` |
-| Codex | `$think-it-through` |
-
-[Close the gap](close-the-gap) starts only by name. Its `disable-model-invocation: true` keeps the agent from picking it.
+Then start a new session. Ask in your own words and the agent picks the skill that fits (*"Grill me on this plan"* starts Think it through), or call one by name: `/think-it-through` in Claude Code, `$think-it-through` in Codex. [Close the gap](close-the-gap) starts only by name.
 
 ## Mods
 

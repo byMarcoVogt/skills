@@ -1,8 +1,8 @@
 ---
 name: house-style
-description: Keeps the model's default habits out of what it writes and builds for the user, in German and English, in text, in rendered output (pages, artifacts, decks, docs, diagrams, UI) and in how answers and decisions are put to the user. Use whenever drafting or revising text, building something visual, or answering with options, findings or explanations, and when the user says house style, slop, "klingt nach KI", "sieht billig aus", "prüf den Text" or asks for a check of a text or page.
+description: Keeps the model's default habits out of what it writes and builds for the user, in German and English, in text, in rendered output (pages, artifacts, decks, docs, diagrams, UI) and in how answers and decisions are put to the user. Use when writing or revising prose the user reads or sends (READMEs, docs, mails, posts), building a page, deck or UI, and when the user says house style, slop, "klingt nach KI", "sieht billig aus", "prüf den Text" or asks for a check of a text or page.
 metadata:
-  version: "0.3"
+  version: "0.4"
   benchmark: "51 lines, 4119 bytes"
   origin: "Inspired by unslop from pstack, github.com/cursor/plugins (MIT)"
 ---

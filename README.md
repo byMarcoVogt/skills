@@ -15,6 +15,8 @@ Agent Skills I built for my own daily work with Claude Code and Codex. Each one 
 **1. A skill earns its place only if work goes worse without it.**
 - Real use is the primary evidence. [Skill trials](skill-trials) runs one ablation or variant of a skill through a window of real work, then keeps it, rebuilds what went missing or added value, or retires the skill.
 
+*How I measure:* a trial is written down before it starts: what should go worse or better, and over how many sessions. Afterwards I compare those sessions with recent ones on how often I had to step in (correct or re-explain). If I switch back during the trial, that settles it.
+
 **2. A skill is valuable real estate.**
 - Each word has to carry meaning and invoke the right behavior.
 - The benchmark: each SKILL.md records its size in bytes at the last major release in `metadata.benchmark`. Lines don't count, so formatting for readers stays free.
@@ -38,6 +40,8 @@ npx skills add byMarcoVogt/skills --skill think-it-through -a claude-code -g -y
 For Codex, use `-a codex`. [`npx skills`](https://github.com/vercel-labs/skills) is Vercel's installer and needs Node.js 22.20 or newer. Skill trials needs Think it through.
 
 Then start a new session. Ask in your own words and the agent picks the skill that fits (*"Grill me on this plan"* starts Think it through), or call one by name: `/think-it-through` in Claude Code, `$think-it-through` in Codex. [Close the gap](close-the-gap) starts only by name.
+
+Update: `npx skills update -g`. Uninstall: `npx skills remove -g think-it-through` (the skill's folder name).
 
 ## Mods
 

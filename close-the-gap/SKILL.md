@@ -5,7 +5,7 @@ disable-model-invocation: true
 metadata:
   version: "0.7"
   status: "experimental"
-  benchmark: "22 lines, 1760 bytes"
+  benchmark: "1760 bytes"
 ---
 The frontier is the outer edge of how the strongest practitioners work with artificial intelligence today, and how they think about that work. It moves monthly, if not daily. Your knowledge ends at your training cutoff, so refresh your view of the frontier where you can before proposing bodies.
 

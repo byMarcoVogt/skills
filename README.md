@@ -6,7 +6,6 @@ Agent Skills I built for my own daily work with Claude Code and Codex. Each one 
 |---|---|
 | [Think it through](think-it-through) | Interviews you about an idea, plan or decision, one question at a time, until you and the agent reach a shared understanding. |
 | [Close the gap](close-the-gap) `experimental` | Finds the most worthwhile gap between how you work with AI and the frontier. Then it teaches you about it, from the frontier back to your work. |
-| [House style](house-style) | Holds the agent to your style in how it writes, designs and communicates. |
 | [Skill trials](skill-trials) | Runs one ablation or variant of a skill through a window of real work, then keeps it, rebuilds only what went missing, or retires the skill. |
 
 ## Design principles
@@ -15,8 +14,6 @@ Agent Skills I built for my own daily work with Claude Code and Codex. Each one 
 
 **1. A skill earns its place only if work goes worse without it.**
 - Real use is the primary evidence. [Skill trials](skill-trials) runs one ablation or variant of a skill through a window of real work, then keeps it, rebuilds what went missing or added value, or retires the skill.
-
-*Example:* House style comes from 1,087 of my own corrections, choices and approvals since August 2026.
 
 **2. A skill is valuable real estate.**
 - Each word has to carry meaning and invoke the right behavior.

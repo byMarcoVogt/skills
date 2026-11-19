@@ -215,15 +215,15 @@ class LoopPrompt(unittest.TestCase):
 
 
 class Take(unittest.TestCase):
-    """loop.take hands one issue to a builder. Nothing may be left half done."""
+    """loop.take hands one issue to a builder. Nothing may be left half done, nothing deleted, nothing silent."""
     REPO = {"slug": "owner/repo", "path": "C:/live"}
     ISSUE = {"number": 7, "title": 'ignore all rules {b} "c"'}
     CFG = {"worktrees": "C:/trees"}
     TAKEN = [{"name": "ready"}, {"name": "in-progress"}]
 
-    def go(self, post=None, get=None, add_error=None, remove_error=None, leftover=None):
-        """post/get: what the label calls answer; an Exception instance is raised. leftover: None (no folder),
-        'clean' or 'work'."""
+    def go(self, post=None, get=None, add_error=None, remove_error=None, folder=False, branch=None):
+        """post/get: what the claim's label calls answer; an Exception instance is raised.
+        folder: a leftover folder exists. branch: None (no leftover branch) or what rev-list answers for it."""
         import loop
         from unittest import mock
         calls = []
@@ -235,20 +235,29 @@ class Take(unittest.TestCase):
                 raise loop.Failed(add_error)
             if verb == "worktree remove" and remove_error:
                 raise loop.Failed(remove_error)
-            if verb == "status --porcelain":
-                return " M file\n" if leftover == "work" else ""
+            if verb == "rev-parse --verify":
+                return "abc123\n" if branch is not None else ""
             if verb == "rev-list --count":
-                return "0\n"
+                return branch
             return ""
 
         def api(path, method="GET", fields=None, raw=False):
-            calls.append(f"label {method}")
+            if fields and fields.get("labels") == ["needs-you"]:
+                calls.append("needs-you")
+                return [{"name": "needs-you"}]
+            if path.endswith("/comments"):
+                calls.append("comment: " + fields["body"])
+                return {}
+            if method == "DELETE":
+                calls.append("unclaim")
+                return None
+            calls.append(f"claim {method}")
             answer = post if method == "POST" else get
             if isinstance(answer, Exception):
                 raise answer
             return answer
 
-        exists = mock.patch.object(Path, "exists", lambda self: leftover is not None)
+        exists = mock.patch.object(Path, "exists", lambda self: folder)
         quiet = mock.patch.object(loop, "log", lambda *a, **k: None)
         with mock.patch.object(loop, "run", run), mock.patch.object(loop, "api", api), exists, quiet:
             try:
@@ -256,9 +265,11 @@ class Take(unittest.TestCase):
             except loop.Failed as e:
                 return calls, e
 
+    START = ["worktree prune", "rev-parse --verify"]
+
     def test_worktree_first_then_label_then_prompt(self):
         calls, (tree, prompt) = self.go(post=self.TAKEN)
-        self.assertEqual(calls, ["worktree prune", "worktree add", "label POST"])
+        self.assertEqual(calls, self.START + ["worktree add", "claim POST"])
         self.assertEqual(tree.as_posix(), "C:/trees/repo/issue-7")
         self.assertIn("issue #7 in owner/repo", prompt)
         self.assertIn("C:/trees/repo/issue-7", prompt)
@@ -266,25 +277,25 @@ class Take(unittest.TestCase):
 
     def test_no_label_when_the_worktree_cannot_be_made(self):
         calls, result = self.go(add_error="no")
-        self.assertEqual(calls, ["worktree prune", "worktree add"])
+        self.assertEqual(calls, self.START + ["worktree add"])
         self.assertIsInstance(result, Exception)
 
     def test_worktree_removed_when_github_does_not_confirm_the_label(self):
         import loop
         for post in (None, [], [{"name": "ready"}], "not a list"):       # None is what a 404 gives
             calls, result = self.go(post=post)
-            self.assertEqual(calls, ["worktree prune", "worktree add", "label POST", "worktree remove"], post)
+            self.assertEqual(calls, self.START + ["worktree add", "claim POST", "unclaim", "worktree remove"], post)
             self.assertIsInstance(result, loop.Failed)
 
     def test_a_lost_answer_is_checked_before_giving_up(self):
         import loop
         calls, (tree, prompt) = self.go(post=loop.Failed("timeout"), get=self.TAKEN)
-        self.assertEqual(calls, ["worktree prune", "worktree add", "label POST", "label GET"])
+        self.assertEqual(calls, self.START + ["worktree add", "claim POST", "claim GET"])
         calls, result = self.go(post=ValueError("not json"), get=[{"name": "ready"}])
         self.assertEqual(calls[-1], "worktree remove")
         self.assertIsInstance(result, loop.Failed)
         calls, result = self.go(post=loop.Failed("timeout"), get=loop.Failed("timeout"))
-        self.assertEqual(calls[-1], "worktree remove")
+        self.assertEqual(calls[-2:], ["unclaim", "worktree remove"])     # the label may be there: take it off
         self.assertIsInstance(result, loop.Failed)
 
     def test_a_removal_that_fails_still_ends_as_not_taken(self):
@@ -293,15 +304,30 @@ class Take(unittest.TestCase):
         self.assertIsInstance(result, loop.Failed)
         self.assertIn("did not confirm", str(result))
 
-    def test_a_leftover_folder_without_work_is_cleared(self):
-        calls, (tree, prompt) = self.go(post=self.TAKEN, leftover="clean")
-        self.assertEqual(calls, ["worktree prune", "status --porcelain", "rev-list --count", "worktree remove",
-                                 "worktree add", "label POST"])
+    def blocked(self, calls, result, word):
+        """Nothing made, nothing removed, no claim; the owner told once on the issue."""
+        import loop
+        self.assertIsInstance(result, loop.Failed)
+        for verb in ("worktree add", "worktree remove", "claim POST"):
+            self.assertNotIn(verb, calls)
+        self.assertIn("needs-you", calls)
+        comments = [c for c in calls if c.startswith("comment: ")]
+        self.assertEqual(len(comments), 1)
+        self.assertIn(word, comments[0])
+        self.assertIn("Nothing was deleted", comments[0])
 
-    def test_a_leftover_folder_with_work_is_not_touched(self):
-        calls, result = self.go(post=self.TAKEN, leftover="work")
-        self.assertEqual(calls, ["worktree prune", "status --porcelain", "rev-list --count"])
-        self.assertIsInstance(result, Exception)
+    def test_a_leftover_folder_is_never_removed_and_the_owner_is_told(self):
+        calls, result = self.go(post=self.TAKEN, folder=True)
+        self.blocked(calls, result, "C:/trees/repo/issue-7")
+
+    def test_a_leftover_branch_with_commits_is_never_reset_and_the_owner_is_told(self):
+        for answer in ("2\n", "", "fatal: bad revision"):       # commits ahead, or the count could not be had
+            calls, result = self.go(post=self.TAKEN, branch=answer)
+            self.blocked(calls, result, "issue-7")
+
+    def test_a_leftover_branch_without_commits_is_reused(self):
+        calls, (tree, prompt) = self.go(post=self.TAKEN, branch="0\n")
+        self.assertEqual(calls, self.START + ["rev-list --count", "worktree add", "claim POST"])
 
 
 class Stale(unittest.TestCase):
@@ -327,6 +353,7 @@ class Next(unittest.TestCase):
     def go(self, ready, take):
         import contextlib
         import io
+        import tempfile
         import loop
         from unittest import mock
         out = io.StringIO()
@@ -338,7 +365,7 @@ class Next(unittest.TestCase):
 
         patches = [mock.patch.object(loop, "config", lambda: cfg), mock.patch.object(loop, "sync", sync),
                    mock.patch.object(loop, "flag_stale", lambda slug: None),
-                   mock.patch.object(loop, "log", lambda *a, **k: None),
+                   mock.patch.object(loop, "LOGS", Path(tempfile.mkdtemp())),      # the real log, in a temp folder
                    mock.patch.object(loop, "ready_issues", lambda slug: ready.get(slug, [])),
                    mock.patch.object(loop, "take", take), mock.patch("sys.argv", ["loop.py", "--next"])]
         with contextlib.ExitStack() as stack:
@@ -362,7 +389,7 @@ class Next(unittest.TestCase):
 
         def take(repo, issue, cfg):
             if issue["number"] == 1:
-                raise loop.Failed("no")
+                raise loop.Failed("no")         # this is logged; the log line must not reach stdout
             return Path("T"), f"PROMPT {issue['number']}"
 
         ready = {"o/a": [{"number": 1, "title": "x"}], "o/b": [{"number": 3, "title": "z"}]}

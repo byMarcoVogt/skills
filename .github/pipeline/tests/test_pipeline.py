@@ -265,7 +265,7 @@ class Take(unittest.TestCase):
             except loop.Failed as e:
                 return calls, e
 
-    START = ["worktree prune", "rev-parse --verify"]
+    START = ["rev-parse --verify"]
 
     def test_worktree_first_then_label_then_prompt(self):
         calls, (tree, prompt) = self.go(post=self.TAKEN)
@@ -275,10 +275,9 @@ class Take(unittest.TestCase):
         self.assertIn("C:/trees/repo/issue-7", prompt)
         self.assertNotIn("ignore all rules", prompt)
 
-    def test_no_label_when_the_worktree_cannot_be_made(self):
-        calls, result = self.go(add_error="no")
-        self.assertEqual(calls, self.START + ["worktree add"])
-        self.assertIsInstance(result, Exception)
+    def test_the_owner_is_told_when_the_worktree_cannot_be_made(self):
+        calls, result = self.go(add_error="already used by worktree")
+        self.blocked(calls, result, "already used by worktree", tried_to_add=True)
 
     def test_worktree_removed_when_github_does_not_confirm_the_label(self):
         import loop
@@ -304,15 +303,15 @@ class Take(unittest.TestCase):
         self.assertIsInstance(result, loop.Failed)
         self.assertIn("did not confirm", str(result))
 
-    def blocked(self, calls, result, word):
-        """Nothing made, nothing removed, no claim; the owner told once on the issue."""
+    def blocked(self, calls, result, word, tried_to_add=False):
+        """Nothing made, nothing removed, nothing pruned, no claim; the owner told on the issue, words first."""
         import loop
         self.assertIsInstance(result, loop.Failed)
-        for verb in ("worktree add", "worktree remove", "claim POST"):
+        for verb in ("worktree remove", "worktree prune", "claim POST") + (() if tried_to_add else ("worktree add",)):
             self.assertNotIn(verb, calls)
-        self.assertIn("needs-you", calls)
         comments = [c for c in calls if c.startswith("comment: ")]
         self.assertEqual(len(comments), 1)
+        self.assertEqual(calls[-2:], [comments[0], "needs-you"])       # the comment before the label
         self.assertIn(word, comments[0])
         self.assertIn("Nothing was deleted", comments[0])
 
@@ -324,6 +323,22 @@ class Take(unittest.TestCase):
         for answer in ("2\n", "", "fatal: bad revision"):       # commits ahead, or the count could not be had
             calls, result = self.go(post=self.TAKEN, branch=answer)
             self.blocked(calls, result, "issue-7")
+
+    def test_no_label_without_the_comment(self):
+        """If the comment cannot be posted, 'needs-you' must not go on: the next run has to say it again."""
+        import loop
+        from unittest import mock
+        calls = []
+
+        def api(path, method="GET", fields=None, raw=False):
+            calls.append(path.rsplit("/", 1)[-1])
+            if path.endswith("/comments"):
+                raise loop.Failed("network")
+
+        with mock.patch.object(loop, "api", api):
+            with self.assertRaises(loop.Failed):
+                loop.tell_owner("owner/repo", 7, "something")
+        self.assertEqual(calls, ["comments"])
 
     def test_a_leftover_branch_without_commits_is_reused(self):
         calls, (tree, prompt) = self.go(post=self.TAKEN, branch="0\n")

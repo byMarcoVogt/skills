@@ -48,9 +48,9 @@ def ready_issues(slug: str) -> list[dict]:
 def in_the_way(tree: Path, live: Path, n: int) -> str | None:
     """What an earlier try left behind that this one must not overwrite, in words for the owner, or None.
 
-    The loop never deletes or resets anything it did not make in this very run: a leftover folder may hold work
-    that Git does not show (ignored files), and a leftover branch may hold commits that are nowhere else."""
-    run(["git", "worktree", "prune"], cwd=live, check=False)
+    The loop never deletes anything it did not make in this very run, and never moves a branch that holds
+    commits which are not on main: a leftover folder may hold work that Git does not show (ignored files), and
+    a leftover branch may hold commits that are nowhere else."""
     if tree.exists():
         return f"the folder `{tree.as_posix()}` from an earlier try is still there"
     branch = f"issue-{n}"
@@ -62,12 +62,13 @@ def in_the_way(tree: Path, live: Path, n: int) -> str | None:
 
 
 def tell_owner(slug: str, n: int, what: str) -> None:
-    """Something stands in the way that will not go away by itself: the owner hears it on the issue, once.
-    With 'needs-you' on it the loop leaves the issue alone until he removes the label."""
-    api(f"repos/{slug}/issues/{n}/labels", "POST", {"labels": ["needs-you"]})
+    """Something stands in the way that will not go away by itself: the owner hears it on the issue.
+    The comment comes before the label: with 'needs-you' on it the loop leaves the issue alone, so the label
+    may only stick once the words are there. If the label fails, the next run says it again."""
     api(f"repos/{slug}/issues/{n}/comments", "POST", {"body":
         f"The loop could not start a builder for this issue: {what}. Nothing was deleted or overwritten. "
         "Look at what is there, keep or remove it, then remove the label `needs-you` to have the issue built."})
+    api(f"repos/{slug}/issues/{n}/labels", "POST", {"labels": ["needs-you"]})
 
 
 def claim(slug: str, n: int) -> bool:
@@ -99,7 +100,11 @@ def take(repo: dict, issue: dict, cfg: dict) -> tuple[Path, str]:
     if blocked:
         tell_owner(slug, n, blocked)
         raise Failed(f"{slug}#{n}: {blocked}; the owner was told on the issue")
-    run(["git", "worktree", "add", str(tree), "-B", f"issue-{n}", "origin/main"], cwd=live)
+    try:
+        run(["git", "worktree", "add", str(tree), "-B", f"issue-{n}", "origin/main"], cwd=live)
+    except Failed as e:
+        tell_owner(slug, n, f"Git could not make the worktree `{tree.as_posix()}` ({e})")
+        raise
     if not claim(slug, n):
         try:        # the label may be on the issue although nobody confirmed it: take it off, so the issue is retried
             api(f"repos/{slug}/issues/{n}/labels/in-progress", "DELETE")
@@ -131,12 +136,12 @@ def flag_stale(slug: str) -> None:
     now = datetime.datetime.now(datetime.timezone.utc)
     for i in stale(paged(f"repos/{slug}/issues?state=open&labels=in-progress"), now):
         n = i["number"]
-        api(f"repos/{slug}/issues/{n}/labels", "POST", {"labels": ["needs-you"]})
         api(f"repos/{slug}/issues/{n}/comments", "POST", {"body":
             "This issue has been marked as taken for more than a day and nothing has happened on it since. "
             "Its builder has most likely stopped. To have it built again, remove the labels `in-progress` and "
             "`needs-you`. If that builder left a folder or commits on this machine, the loop will not touch them; "
             "it will say so here and wait for you."})
+        api(f"repos/{slug}/issues/{n}/labels", "POST", {"labels": ["needs-you"]})
         log(f"{slug}#{n}: taken for over a day with no activity, flagged for the owner", quiet=True)
 
 
@@ -204,6 +209,11 @@ def cli() -> int:
                 build(repo, issue, cfg)
             except Failed as e:
                 log(f"{repo['slug']}#{issue['number']}: {e}", quiet=a.next)
+            except Exception as e:      # with --next, one issue's surprise must not cost the others their turn
+                if not a.next:
+                    raise
+                with contextlib.suppress(OSError):
+                    log(f"{repo['slug']}#{issue['number']}: unexpected {type(e).__name__}: {e}", quiet=True)
     return 0
 
 

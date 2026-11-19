@@ -15,8 +15,8 @@ def md(version, body="text"):
     return f"---\nname: demo\ndescription: d\n{v}---\n{body}\n"
 
 
-def ev(kind, sha=SHA, result="pass", author="owner", report="looked at the diff"):
-    return {"author": author, "body": f"<!-- pipeline-evidence kind={kind} sha={sha} result={result} -->\n{report}"}
+def ev(kind, sha=SHA, result="pass", author="owner", report="looked at the diff", who=" model=gpt-6-astra effort=high"):
+    return {"author": author, "body": f"<!-- pipeline-evidence kind={kind} sha={sha} result={result}{who} -->\n{report}"}
 
 
 class Title(unittest.TestCase):
@@ -91,9 +91,87 @@ class Evidence(unittest.TestCase):
         found = rules.find_evidence([ev("qa", result="fail"), ev("qa"), ev("review")], SHA, "owner")
         self.assertTrue(rules.check_evidence(found, True)[0])
 
+    def test_evidence_must_name_its_model_and_effort(self):
+        found = rules.find_evidence([ev("review"), ev("qa", who="")], SHA, "owner")
+        ok, text = rules.check_evidence(found, True)
+        self.assertFalse(ok)
+        self.assertIn("model and effort: qa", text)
+        for half in (" model=gpt-6-astra", " effort=high", " model= effort=high", " model=x effort="):
+            self.assertFalse(rules.check_evidence(rules.find_evidence([ev("review"), ev("qa", who=half)], SHA, "owner"), True)[0], half)
+        # 'unknown' says plainly that a value could not be had, and counts
+        found = rules.find_evidence([ev("review", who=" model=claude-fable-5-2 effort=unknown"), ev("qa")], SHA, "owner")
+        self.assertTrue(rules.check_evidence(found, True)[0])
+        # signed evidence given later replaces unsigned evidence, and a fail still wins over everything
+        found = rules.find_evidence([ev("qa", who=""), ev("qa"), ev("review")], SHA, "owner")
+        self.assertTrue(rules.check_evidence(found, True)[0])
+        found = rules.find_evidence([ev("review", result="fail"), ev("qa", who="")], SHA, "owner")
+        self.assertIn("fail", rules.check_evidence(found, True)[1])
+
     def test_not_needed_without_skill_or_pipeline_change(self):
         self.assertTrue(rules.check_evidence({}, False)[0])
         self.assertTrue(rules.check_evidence({}, True, undo_of="demo--v1.0.0")[0])
+
+
+class EvidenceCommand(unittest.TestCase):
+    """evidence.py writes the marker the gate reads; model and effort come from the source that knows them."""
+    def post(self, argv, record=None):
+        import json
+        import tempfile
+        import evidence
+        from unittest import mock
+        folder = Path(tempfile.mkdtemp())
+        (folder / "report.md").write_text("looked at it", encoding="utf-8")
+        if record is not None:
+            run = folder / "runs" / "project-1" / "RUN1"
+            run.mkdir(parents=True)
+            (run / "meta.json").write_text(json.dumps(record), encoding="utf-8")
+        posted = []
+
+        def api(path, method="GET", fields=None, raw=False):
+            if method == "POST":
+                posted.append(fields["body"])
+                return {"html_url": "url"}
+            return {"head": {"sha": SHA}}
+
+        args = ["evidence.py", "--repo", "o/r", "--pr", "1", "--kind", "qa", "--result", "pass",
+                "--file", str(folder / "report.md")] + argv
+        with mock.patch.object(evidence, "api", api), mock.patch("sys.argv", args), \
+                mock.patch.dict("os.environ", {"ROUTE_RUNS": str(folder / "runs")}), mock.patch("builtins.print"):
+            try:
+                evidence.cli()
+            except evidence.Failed as e:
+                return e
+        return posted[0]
+
+    def counts(self, body):
+        found = rules.find_evidence([{"author": "owner", "body": body}, ev("review")], SHA, "owner")
+        return rules.check_evidence(found, True)[0]
+
+    def test_given_values_are_written_and_count(self):
+        body = self.post(["--model", "claude-fable-5-2", "--effort", "medium"])
+        self.assertIn("model=claude-fable-5-2 effort=medium -->", body)
+        self.assertIn("**Model `claude-fable-5-2` at effort `medium`**", body)
+        self.assertTrue(self.counts(body))
+
+    def test_values_are_read_from_routes_record(self):
+        body = self.post(["--route-run", "RUN1"], {"state": "ok", "model": "gpt-6.2-sol", "effort": "xhigh"})
+        self.assertIn("model=gpt-6.2-sol effort=xhigh -->", body)
+        self.assertIn("route's record of run `RUN1`", body)
+        self.assertTrue(self.counts(body))
+
+    def test_a_route_run_without_an_answer_is_not_evidence(self):
+        self.assertIsInstance(self.post(["--route-run", "RUN1"], {"state": "refused", "model": "m", "effort": "e"}), Exception)
+        self.assertIsInstance(self.post(["--route-run", "NOPE"], {"state": "ok", "model": "m", "effort": "e"}), Exception)
+
+    def test_nothing_is_posted_without_model_and_effort(self):
+        for argv in ([], ["--model", "x"], ["--effort", "high"], ["--model", "two words", "--effort", "high"],
+                     ["--route-run", "RUN1", "--model", "x", "--effort", "high"]):
+            self.assertIsInstance(self.post(argv, {"state": "ok", "model": "m", "effort": "e"}), Exception, argv)
+
+    def test_unknown_is_said_plainly(self):
+        body = self.post(["--model", "claude-fable-5-2", "--effort", "unknown"])
+        self.assertIn("effort=unknown -->", body)
+        self.assertTrue(self.counts(body))
 
 
 class Protected(unittest.TestCase):

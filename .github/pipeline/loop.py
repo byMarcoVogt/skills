@@ -45,25 +45,78 @@ def ready_issues(slug: str) -> list[dict]:
             and not {"in-progress", "needs-you"} & {l["name"] for l in i["labels"]}]
 
 
+def clear_leftover(tree: Path, live: Path) -> None:
+    """A folder left by an earlier try must not block this one. It is removed only when it holds no work:
+    no changed files and no commit that is not on main."""
+    run(["git", "worktree", "prune"], cwd=live, check=False)
+    if not tree.exists():
+        return
+    dirty = run(["git", "status", "--porcelain"], cwd=tree, check=False).strip()
+    ahead = run(["git", "rev-list", "--count", "origin/main..HEAD"], cwd=tree, check=False).strip()
+    if dirty or ahead != "0":
+        raise Failed(f"{tree} is left from an earlier try and holds work; it was not touched")
+    run(["git", "worktree", "remove", "--force", str(tree)], cwd=live)
+
+
+def claim(slug: str, n: int) -> bool:
+    """Put 'in-progress' on the issue and say whether it is really there. If the answer got lost on the way,
+    GitHub is asked again before anything is concluded."""
+    path = f"repos/{slug}/issues/{n}/labels"
+    try:
+        labels = api(path, "POST", {"labels": ["in-progress"]})
+    except Exception:
+        try:
+            labels = api(path)
+        except Exception:
+            return False
+    return isinstance(labels, list) and any(isinstance(l, dict) and l.get("name") == "in-progress" for l in labels)
+
+
 def take(repo: dict, issue: dict, cfg: dict) -> tuple[Path, str]:
     """Make the issue's worktree, mark the issue as taken, and return the worktree and the builder's prompt.
 
-    Nothing may be left half done: the prompt is filled in first, the worktree is made second, the label comes
-    last and must be confirmed by GitHub. If the label does not stick, the worktree is removed again, so the
-    issue keeps 'ready' alone and the next run can try once more."""
+    Nothing may be left half done: the prompt is filled in first, a leftover folder without work is cleared,
+    the worktree is made, and the label comes last and must be confirmed by GitHub. If it is not, the worktree
+    is removed again, so the issue keeps 'ready' alone and the next run can try once more."""
     slug, live, n = repo["slug"], Path(repo["path"]), issue["number"]
     tree = Path(cfg["worktrees"]) / slug.split("/")[1] / f"issue-{n}"
     prompt = (HERE / "loop-prompt.md").read_text(encoding="utf-8").format(
-        number=n, slug=slug, title=issue["title"], pipeline=HERE.as_posix(), tree=tree.as_posix())
+        number=n, slug=slug, pipeline=HERE.as_posix(), tree=tree.as_posix())
+    clear_leftover(tree, live)
     run(["git", "worktree", "add", str(tree), "-B", f"issue-{n}", "origin/main"], cwd=live)
-    try:
-        labels = api(f"repos/{slug}/issues/{n}/labels", "POST", {"labels": ["in-progress"]})
-        if not any(l.get("name") == "in-progress" for l in labels or []):
-            raise Failed(f"GitHub did not confirm the 'in-progress' label on {slug}#{n}")
-    except Failed:
-        run(["git", "worktree", "remove", "--force", str(tree)], cwd=live, check=False)
-        raise
+    if not claim(slug, n):
+        try:
+            run(["git", "worktree", "remove", "--force", str(tree)], cwd=live)
+        except Failed as e:
+            log(f"{slug}#{n}: could not remove {tree} after a failed claim: {e}", quiet=True)
+        raise Failed(f"GitHub did not confirm the 'in-progress' label on {slug}#{n}")
     return tree, prompt
+
+
+def stale(issues: list[dict], now: datetime.datetime, hours: int = 24) -> list[dict]:
+    """Taken, but nothing has happened on the issue for a day: its builder is most likely gone."""
+    out = []
+    for i in issues:
+        names = {l["name"] for l in i.get("labels", [])}
+        if "pull_request" in i or "in-progress" not in names or "needs-you" in names:
+            continue
+        seen = datetime.datetime.fromisoformat(i["updated_at"].replace("Z", "+00:00"))
+        if now - seen > datetime.timedelta(hours=hours):
+            out.append(i)
+    return out
+
+
+def flag_stale(slug: str) -> None:
+    """Silence must mean it works: an issue that sits as taken with no sign of life gets 'needs-you'."""
+    now = datetime.datetime.now(datetime.timezone.utc)
+    for i in stale(paged(f"repos/{slug}/issues?state=open&labels=in-progress"), now):
+        n = i["number"]
+        api(f"repos/{slug}/issues/{n}/labels", "POST", {"labels": ["needs-you"]})
+        api(f"repos/{slug}/issues/{n}/comments", "POST", {"body":
+            "This issue has been marked as taken for more than a day and nothing has happened on it since. "
+            "Its builder has most likely stopped. To have it built again, remove the labels `in-progress` and "
+            "`needs-you`."})
+        log(f"{slug}#{n}: taken for over a day with no activity, flagged for the owner", quiet=True)
 
 
 def build(repo: dict, issue: dict, cfg: dict) -> None:
@@ -107,6 +160,11 @@ def cli() -> int:
     for problem in problems:
         log(f"needs attention: {problem}", quiet=a.next)
     for repo in cfg["repos"]:
+        if not a.dry_run:
+            try:
+                flag_stale(repo["slug"])
+            except Failed as e:
+                log(f"{repo['slug']}: could not check for stale issues: {e}", quiet=a.next)
         for issue in ready_issues(repo["slug"]):
             if a.dry_run:
                 log(f"would build {repo['slug']}#{issue['number']}: {issue['title']}")
@@ -114,8 +172,12 @@ def cli() -> int:
             try:
                 if a.next:
                     tree, prompt = take(repo, issue, cfg)
-                    log(f"{repo['slug']}#{issue['number']}: handed to the calling session, worktree {tree}", quiet=True)
-                    print(prompt)
+                    print(prompt, flush=True)       # first: once the issue is taken, the prompt must get out
+                    try:
+                        log(f"{repo['slug']}#{issue['number']}: handed to the calling session, worktree {tree}",
+                            quiet=True)
+                    except OSError:
+                        pass
                     return 0        # one issue per session
                 build(repo, issue, cfg)
             except Failed as e:

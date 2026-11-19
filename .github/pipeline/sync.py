@@ -13,7 +13,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from common import Failed, config, main, run
+from common import NO_WINDOW, Failed, config, main, run
 
 
 def same(a: Path, b: Path) -> bool:
@@ -22,7 +22,8 @@ def same(a: Path, b: Path) -> bool:
 
 def link(target: Path, at: Path) -> None:
     # bytes, not text: cmd answers in the console's code page, which Python cannot always decode
-    p = subprocess.run(["cmd", "/c", "mklink", "/J", str(at), str(target)], capture_output=True)
+    p = subprocess.run(["cmd", "/c", "mklink", "/J", str(at), str(target)], capture_output=True,
+                       creationflags=NO_WINDOW)
     if p.returncode:
         raise Failed(f"Could not link {at}: {(p.stderr or p.stdout).decode('ascii', 'replace').strip()}")
 
@@ -33,7 +34,8 @@ def pull(path: Path) -> list[str]:
     if branch != "main":
         return [f"{path} is on branch '{branch}', not on main. Skills are live from main only."]
     run(["git", "fetch", "origin", "--tags", "--prune", "--quiet"], cwd=path)
-    p = subprocess.run(["git", "merge", "--ff-only", "--quiet", "origin/main"], cwd=path, capture_output=True, text=True)
+    p = subprocess.run(["git", "merge", "--ff-only", "--quiet", "origin/main"], cwd=path, capture_output=True, text=True,
+                       creationflags=NO_WINDOW)
     if p.returncode:
         return [f"{path} could not move to the newest main: {(p.stderr or p.stdout).strip()[:300]}"]
     return []

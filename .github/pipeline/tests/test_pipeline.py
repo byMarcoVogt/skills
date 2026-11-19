@@ -189,5 +189,19 @@ class Guard(unittest.TestCase):
         self.assertIsNone(self.deny("rm -rf C:/Claude/.worktrees/skills/issue-3/tmp"))
 
 
+class NoWindow(unittest.TestCase):
+    def test_every_started_program_is_windowless(self):
+        """The loop runs under pythonw; a call without the flag flashes a terminal window on the owner's screen."""
+        import ast
+        folder = Path(__file__).resolve().parent.parent
+        for path in sorted(folder.glob("*.py")):
+            for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+                if (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+                        and isinstance(node.func.value, ast.Name) and node.func.value.id == "subprocess"
+                        and node.func.attr in ("run", "Popen", "call", "check_call", "check_output")):
+                    flags = [k for k in node.keywords if k.arg == "creationflags"]
+                    self.assertTrue(flags, f"{path.name}:{node.lineno} starts a program without creationflags=NO_WINDOW")
+
+
 if __name__ == "__main__":
     unittest.main()

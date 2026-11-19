@@ -209,8 +209,8 @@ class LoopPrompt(unittest.TestCase):
         import string
         text = (Path(__file__).resolve().parent.parent / "loop-prompt.md").read_text(encoding="utf-8")
         fields = {name for _, name, _, _ in string.Formatter().parse(text) if name is not None}
-        self.assertEqual(fields, {"number", "slug", "title", "pipeline"})
-        text.format(number=1, slug="owner/repo", title='a {b} "c"', pipeline="P")
+        self.assertEqual(fields, {"number", "slug", "title", "pipeline", "tree"})
+        text.format(number=1, slug="owner/repo", title='a {b} "c"', pipeline="P", tree="T")
 
 
 if __name__ == "__main__":

@@ -48,14 +48,21 @@ def ready_issues(slug: str) -> list[dict]:
 def take(repo: dict, issue: dict, cfg: dict) -> tuple[Path, str]:
     """Make the issue's worktree, mark the issue as taken, and return the worktree and the builder's prompt.
 
-    The worktree comes first: if it cannot be made (a leftover folder from an earlier try), the issue keeps its
-    'ready' label alone and the failure is logged, so it is not stuck as taken with nobody on it."""
+    Nothing may be left half done: the prompt is filled in first, the worktree is made second, the label comes
+    last and must be confirmed by GitHub. If the label does not stick, the worktree is removed again, so the
+    issue keeps 'ready' alone and the next run can try once more."""
     slug, live, n = repo["slug"], Path(repo["path"]), issue["number"]
     tree = Path(cfg["worktrees"]) / slug.split("/")[1] / f"issue-{n}"
-    run(["git", "worktree", "add", str(tree), "-B", f"issue-{n}", "origin/main"], cwd=live)
-    api(f"repos/{slug}/issues/{n}/labels", "POST", {"labels": ["in-progress"]})
     prompt = (HERE / "loop-prompt.md").read_text(encoding="utf-8").format(
         number=n, slug=slug, title=issue["title"], pipeline=HERE.as_posix(), tree=tree.as_posix())
+    run(["git", "worktree", "add", str(tree), "-B", f"issue-{n}", "origin/main"], cwd=live)
+    try:
+        labels = api(f"repos/{slug}/issues/{n}/labels", "POST", {"labels": ["in-progress"]})
+        if not any(l.get("name") == "in-progress" for l in labels or []):
+            raise Failed(f"GitHub did not confirm the 'in-progress' label on {slug}#{n}")
+    except Failed:
+        run(["git", "worktree", "remove", "--force", str(tree)], cwd=live, check=False)
+        raise
     return tree, prompt
 
 
@@ -77,10 +84,13 @@ def build(repo: dict, issue: dict, cfg: dict) -> None:
 
 def cli() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--dry-run", action="store_true")
-    ap.add_argument("--next", action="store_true", help="take one ready issue and print its builder's instructions")
-    ap.add_argument("--labels", action="store_true", help="create the pipeline's labels in every repo, then stop")
+    mode = ap.add_mutually_exclusive_group()
+    mode.add_argument("--dry-run", action="store_true")
+    mode.add_argument("--next", action="store_true", help="take one ready issue and print its builder's instructions")
+    mode.add_argument("--labels", action="store_true", help="create the pipeline's labels in every repo, then stop")
     a = ap.parse_args()
+    if a.next and hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")     # before anything is taken: an issue title may hold any character
     cfg = config()
 
     if a.labels:
@@ -105,7 +115,6 @@ def cli() -> int:
                 if a.next:
                     tree, prompt = take(repo, issue, cfg)
                     log(f"{repo['slug']}#{issue['number']}: handed to the calling session, worktree {tree}", quiet=True)
-                    sys.stdout.reconfigure(encoding="utf-8")
                     print(prompt)
                     return 0        # one issue per session
                 build(repo, issue, cfg)

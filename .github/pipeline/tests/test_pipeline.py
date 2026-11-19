@@ -213,5 +213,58 @@ class LoopPrompt(unittest.TestCase):
         text.format(number=1, slug="owner/repo", title='a {b} "c"', pipeline="P", tree="T")
 
 
+class Take(unittest.TestCase):
+    """loop.take hands one issue to a builder. Nothing may be left half done."""
+    REPO = {"slug": "owner/repo", "path": "C:/live"}
+    ISSUE = {"number": 7, "title": 'a {b} "c"'}
+    CFG = {"worktrees": "C:/trees"}
+
+    def go(self, api_result=None, api_error=None, worktree_error=None):
+        import loop
+        from unittest import mock
+        calls = []
+
+        def run(args, cwd=None, check=True, stdin=None):
+            calls.append(" ".join(args[:3]))
+            if worktree_error and args[2] == "add":
+                raise loop.Failed(worktree_error)
+            return ""
+
+        def api(path, method="GET", fields=None, raw=False):
+            calls.append("label")
+            if api_error:
+                raise loop.Failed(api_error)
+            return api_result
+
+        with mock.patch.object(loop, "run", run), mock.patch.object(loop, "api", api):
+            try:
+                return calls, loop.take(self.REPO, self.ISSUE, self.CFG)
+            except loop.Failed as e:
+                return calls, e
+
+    def test_worktree_first_then_label_then_prompt(self):
+        calls, (tree, prompt) = self.go(api_result=[{"name": "ready"}, {"name": "in-progress"}])
+        self.assertEqual(calls, ["git worktree add", "label"])
+        self.assertEqual(tree.as_posix(), "C:/trees/repo/issue-7")
+        self.assertIn("issue #7 in owner/repo", prompt)
+        self.assertIn("C:/trees/repo/issue-7", prompt)
+
+    def test_no_label_when_the_worktree_cannot_be_made(self):
+        calls, result = self.go(worktree_error="folder exists")
+        self.assertEqual(calls, ["git worktree add"])
+        self.assertIsInstance(result, Exception)
+
+    def test_worktree_removed_when_the_label_fails(self):
+        calls, result = self.go(api_error="network")
+        self.assertEqual(calls, ["git worktree add", "label", "git worktree remove"])
+        self.assertIsInstance(result, Exception)
+
+    def test_worktree_removed_when_github_does_not_confirm_the_label(self):
+        for answer in (None, [], [{"name": "ready"}]):       # None is what a 404 gives
+            calls, result = self.go(api_result=answer)
+            self.assertEqual(calls, ["git worktree add", "label", "git worktree remove"], answer)
+            self.assertIsInstance(result, Exception)
+
+
 if __name__ == "__main__":
     unittest.main()

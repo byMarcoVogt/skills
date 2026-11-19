@@ -152,6 +152,21 @@ class Guard(unittest.TestCase):
         for c in ("git status", "git log --oneline -5", "git pull --ff-only", "git worktree add ../x -b y origin/main"):
             self.assertIsNone(self.deny(c, cwd="C:/Claude/skills"), c)
 
+    def test_git_bash_paths_and_stepping_out_of_the_live_clone(self):
+        self.assertIsNotNone(self.deny("git -C /c/Claude/skills-private commit -m x", cwd="C:/elsewhere"))
+        self.assertIsNotNone(self.deny("cd /c/Claude/skills && git add -A", cwd="C:/elsewhere"))
+        self.assertIsNotNone(self.deny("rm -rf /c/Claude/skills/demo", cwd="C:/elsewhere"))
+        self.assertIsNone(self.deny("cd /c/Claude/.worktrees/skills/issue-3 && git add -A && git commit -m 'fix: x'",
+                                    cwd="C:/Claude/skills"))
+        self.assertIsNone(self.deny("git -C /c/Claude/.worktrees/skills/issue-3 commit -m x", cwd="C:/Claude/skills"))
+
+    def test_reading_github_is_fine_writing_is_not(self):
+        self.assertIsNone(self.deny("gh api repos/me/skills/commits/abc/statuses --jq '.[].state'"))
+        self.assertIsNone(self.deny("gh api repos/me/skills/branches/main/protection"))
+        self.assertIsNotNone(self.deny("gh api repos/me/skills/statuses/abc -f state=success -f context=pipeline/title"))
+        self.assertIsNotNone(self.deny("gh api -X DELETE repos/me/skills/branches/main/protection"))
+        self.assertIsNotNone(self.deny("gh api repos/me/skills/pulls/3/merge -X PUT"))
+
     def test_live_paths_are_not_prefixes(self):
         self.assertIsNone(self.deny("git -C C:/Claude/skills-old commit -m x", cwd="C:/elsewhere"))
 

@@ -22,6 +22,7 @@ READ_ONLY = {"status", "log", "diff", "show", "fetch", "pull", "worktree", "bran
              "shortlog", "reflog", "check-ignore", "rev-list", "name-rev", "version", "help", "ls-tree", "gc"}
 GIT = re.compile(r"""\bgit(?:\.exe)?(?P<opts>(?:\s+(?:-c\s+\S+|-C\s+(?:"[^"]*"|'[^']*'|\S+)|--[a-z-]+(?:=\S+)?))*)\s+(?P<sub>[a-z][a-z-]*)""")
 DASH_C = re.compile(r"""-C\s+("[^"]*"|'[^']*'|\S+)""")
+CD = re.compile(r"""\b(?:cd|pushd|set-location|sl|chdir)\s+(?:/d\s+)?("[a-z]:/[^"]*"|'[a-z]:/[^']*'|[a-z]:/[^\s;&|)]*)""")
 REMOVE = re.compile(r"\b(rm|rmdir|rd|del|erase|remove-item|ri|move-item|mv|move|ren|rename-item)\b")
 
 RULES = [   # (pattern on the lower-cased command, what to do instead)
@@ -37,7 +38,8 @@ RULES = [   # (pattern on the lower-cased command, what to do instead)
      "Tags and releases come from the release workflow after a merge, not by hand."),
     (r"\bgh(\.exe)?\s+pr\s+merge\b",
      "Merge through the pipeline: python .github/pipeline/merge.py --repo <owner/name> --pr <number>."),
-    (r"\bgh(\.exe)?\s+api\b[^\n;&|]*(protection|rulesets|/statuses|actions/permissions|/hooks|/merge\b)"
+    (r"\bgh(\.exe)?\s+api\b(?=[^\n;&|]*(protection|rulesets|/statuses|actions/permissions|/hooks|/merge\b))"
+     r"(?=[^\n;&|]*(\s-x\s*(post|put|patch|delete)|\s--method\b|\s-f\b|\s--field\b|\s--raw-field\b|\s--input\b))"   # reading is fine
      r"|\bgh(\.exe)?\s+(ruleset|secret)\b|\bgh(\.exe)?\s+repo\s+(edit|delete|rename|archive)\b"
      r"|\bgh(\.exe)?\s+workflow\s+(disable|enable)\b|owner-approved",
      "Branch protection, statuses, repo settings, secrets and the owner-approved label belong to the owner."),
@@ -47,7 +49,8 @@ RULES = [   # (pattern on the lower-cased command, what to do instead)
 
 
 def norm(text: str) -> str:
-    return text.replace("\\", "/").lower()
+    """Lower case, forward slashes, and Git Bash's /c/folder written as c:/folder."""
+    return re.sub(r"(?<![\w:./~-])/([a-z])/", r"\1:/", text.replace("\\", "/").lower())
 
 
 def at(path: str) -> str:
@@ -82,7 +85,7 @@ def decide(payload: dict, cfg: dict) -> str | None:
         return None
 
     raw = (args.get("command") or "").replace("\\", "/")      # case kept: git -C is not git -c
-    command = raw.lower()
+    command = norm(raw)
     cwd_live = any(inside(cwd, p) for p in live)
     in_scope = cwd_live or inside(cwd, worktrees) or any(re.search(at(x), command) for x in live + slugs + linked + [worktrees])
     if not in_scope:
@@ -91,11 +94,13 @@ def decide(payload: dict, cfg: dict) -> str | None:
         if re.search(pattern, command):
             return reason
 
-    moved_into_live = any(re.search(r"\b(cd|pushd|set-location|sl|chdir)\s+(/d\s+)?[\"']?" + at(p), command) for p in live)
     for m in GIT.finditer(raw):
         target = DASH_C.search(m.group("opts"))
         where = target.group(1).strip("\"'") if target else None
-        on_live = any(inside(where, p) for p in live) if where else (cwd_live or moved_into_live)
+        if not where:       # no -C: the folder is the last absolute cd before this git, else the session's folder
+            moves = [c.group(1).strip("\"'") for c in CD.finditer(norm(raw[:m.start()]))]
+            where = moves[-1] if moves else cwd
+        on_live = any(inside(where, p) for p in live)
         if on_live and m.group("sub") not in READ_ONLY:
             return (f"'git {m.group('sub')}' would change the live copy of main. It is read-only here: "
                     "create a worktree (git worktree add) and work on a branch there.")

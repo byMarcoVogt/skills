@@ -26,8 +26,9 @@ RUN_ID = re.compile(r"[A-Za-z0-9-]+")
 
 
 def route_record(run: str, report: str) -> tuple[str, str, str]:
-    """Model and effort of one route run, read from the record route itself wrote for it, and the folder it was
-    found in. The report must carry that run's answer: another run's record cannot sign it."""
+    """Model and effort of one route run, read from the record route itself wrote for it, and where it was found:
+    the project folder and the run, never the full path, which would put this machine's user name into a comment
+    that may be public. The report must carry that run's answer: another run's record cannot sign it."""
     if not RUN_ID.fullmatch(run):
         raise Failed(f"'{run}' is not a route run id (letters, digits and hyphens)")
     where = os.environ.get("ROUTE_RUNS") or (os.environ.get("LOCALAPPDATA") and
@@ -50,7 +51,7 @@ def route_record(run: str, report: str) -> tuple[str, str, str]:
     squeeze = lambda text: " ".join(text.split())
     if not squeeze(answer) or squeeze(answer) not in squeeze(report):
         raise Failed(f"The report does not contain the answer of route run '{run}'; it must go in as it came")
-    return str(meta.get("model") or "unknown"), str(meta.get("effort") or "unknown"), hits[0].as_posix()
+    return str(meta.get("model") or "unknown"), str(meta.get("effort") or "unknown"), hits[0].relative_to(runs).as_posix()
 
 
 def cli() -> int:
@@ -73,7 +74,7 @@ def cli() -> int:
         if a.model or a.effort:
             raise Failed("Give --route-run or --model with --effort, not both: route's record is the source")
         model, effort, folder = route_record(a.route_run, report)
-        source = f"read from route's record of that run, `{folder}`"
+        source = f"read from route's record of that run, `{folder}` in route's runs folder"
     elif a.model and a.effort:
         model, effort = a.model, a.effort
         source = "as given by the session that started the checker"

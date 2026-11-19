@@ -1,6 +1,6 @@
 #!/bin/sh
 # Before anything leaves this machine: no push to main, no tags by hand, the same version rule GitHub applies,
-# and a scan for keys and tokens in what is being pushed.
+# a scan for private details in what a push to a public repo adds, and a scan for keys and tokens.
 here=$(dirname "$0")
 zero=0000000000000000000000000000000000000000
 while read local_ref local_sha remote_ref remote_sha; do
@@ -12,6 +12,7 @@ while read local_ref local_sha remote_ref remote_sha; do
   esac
   [ "$local_sha" = "$zero" ] && continue
   python "$here/../gate.py" local --base origin/main --head "$local_sha" >&2 || exit 1
+  python "$here/../privacy.py" push --url "$2" --base origin/main --head "$local_sha" >&2 || exit 1
   if command -v gitleaks >/dev/null 2>&1; then
     gitleaks git --no-banner --redact --log-opts="origin/main..$local_sha" >&2 || {
       echo "pipeline: this push looks like it holds a key or token. Nothing was pushed." >&2; exit 1; }

@@ -9,7 +9,7 @@ How a change gets from a branch to main in this repo and in the private skills r
 | Start | `git -C <live clone> worktree add <worktrees>/<repo>/<branch> -b <branch> origin/main` and work there. The live clone itself is read-only. |
 | Version | `python P/bump.py --title "fix: ..."` writes the number the title asks for. One PR changes one skill. |
 | Pull request | Push the branch and open a PR. The title starts with `fix: `, `feat: ` or `feat!: `. |
-| Evidence | `python P/evidence.py --repo <owner/name> --pr <n> --kind review --result pass --file report.md`, and the same with `--kind qa`. Review and QA come from agents other than the builder. A new commit voids both. |
+| Evidence | `python P/evidence.py --repo <owner/name> --pr <n> --kind review --result pass --file report.md --model <id> --effort <level>`, and the same with `--kind qa`. For a report that came through route, give `--route-run <run id>` in place of `--model` and `--effort`: the values are then read from route's own record. For an agent, they are the model and effort it was started with; write `unknown` where a value cannot be had. Review and QA come from agents other than the builder. A new commit voids both. |
 | Merge | `python P/merge.py --repo <owner/name> --pr <n>` merges when the gate is green, waits for the tag and updates this machine. |
 | Undo | `python P/undo.py <skill>` goes back one version. Do this first when live use breaks, then fix in a new PR. |
 | Check | `python P/gate.py pr --repo <owner/name> --pr <n>` shows what the gate says, without writing anything. |

@@ -7,7 +7,12 @@ import re
 TITLE = re.compile(r"^(fix|feat|feat!): \S")
 UNDO_TITLE = re.compile(r"^fix: undo (?P<skill>[a-z0-9][a-z0-9-]*) to v(?P<version>\d+(?:\.\d+){1,2})\b")
 VERSION_LINE = re.compile(r"""^(?P<head>\s*version:\s*)(?P<q>["']?)(?P<v>\d+(?:\.\d+){1,2})(?P=q)\s*$""")
-EVIDENCE = re.compile(r"<!-- pipeline-evidence kind=(review|qa) sha=([0-9a-f]{40}) result=(pass|fail) -->")
+# Evidence is posted from the owner's account, so the marker itself has to say who checked: the model and the
+# reasoning effort it ran at. 'unknown' is allowed where a value cannot be had; leaving them out is not.
+MODEL, EFFORT = r"[A-Za-z0-9._:/-]+", r"[A-Za-z0-9._-]+"      # evidence.py checks its values against the same two
+EVIDENCE = re.compile(r"<!-- pipeline-evidence kind=(review|qa) sha=([0-9a-f]{40}) result=(pass|fail)"
+                      rf"(?: model=({MODEL}) effort=({EFFORT}))? -->")
+UNSIGNED = "unsigned"                # evidence that does not name its model and effort
 EVIDENCE_KINDS = ("review", "qa")
 PROTECTED = (".github/",)            # the checks that judge a PR; agents may not change them
 OWNER_LABEL = "owner-approved"       # the owner's yes to a change of the protected files
@@ -132,6 +137,7 @@ def check_protected(paths: list[str], owner_approved: bool) -> tuple[bool, str]:
 
 def find_evidence(comments: list[dict], head_sha: str, owner: str) -> dict[str, str]:
     """The newest evidence per kind that names this exact commit: {'review': 'pass', 'qa': 'fail'}.
+    Evidence that does not name its model and effort comes back as 'unsigned' and does not count.
 
     comments: [{'author': login, 'body': text}] oldest first. Only the owner's account counts, and only a
     comment that carries a report below its marker line."""
@@ -140,9 +146,9 @@ def find_evidence(comments: list[dict], head_sha: str, owner: str) -> dict[str, 
         if (c.get("author") or "").lower() != owner.lower():
             continue
         body = c.get("body") or ""
-        m = EVIDENCE.search(body)
+        m = EVIDENCE.match(body.lstrip())       # the marker opens the comment; one quoted inside a report is text
         if m and m.group(2) == head_sha and body.replace(m.group(0), "").strip():
-            found[m.group(1)] = m.group(3)
+            found[m.group(1)] = m.group(3) if m.group(4) and m.group(5) else UNSIGNED
     return found
 
 
@@ -155,6 +161,9 @@ def check_evidence(found: dict[str, str], needed: bool, undo_of: str | None = No
     failed = [k for k in EVIDENCE_KINDS if found.get(k) == "fail"]
     if failed:
         return False, "Evidence says fail: " + ", ".join(failed)
+    unsigned = [k for k in EVIDENCE_KINDS if found.get(k) == UNSIGNED]
+    if unsigned:
+        return False, "Evidence does not name its model and effort: " + ", ".join(unsigned)
     if missing:
         return False, "No evidence for this exact commit: " + ", ".join(missing)
     return True, "Review and QA evidence passed for this exact commit"

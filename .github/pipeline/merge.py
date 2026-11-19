@@ -20,7 +20,10 @@ def statuses(repo: str, sha: str) -> dict:
 
 
 def wait_green(repo: str, sha: str, seconds: int) -> None:
-    end = time.time() + seconds
+    """Wait until all four statuses are green. A red one may be stale (the gate needs some seconds to judge
+    fresh evidence or a new title), so red gets a short grace period before it counts."""
+    start = time.time()
+    end, grace = start + seconds, start + min(seconds, 60)
     while True:
         got = statuses(repo, sha)
         bad = {c: got.get(c, ("missing", "the gate has not reported yet")) for c in CONTEXTS
@@ -28,7 +31,7 @@ def wait_green(repo: str, sha: str, seconds: int) -> None:
         if not bad:
             return
         waiting = all(state in ("missing", "pending") for state, _ in bad.values())
-        if not waiting or time.time() > end:
+        if time.time() > (end if waiting else grace):
             raise Failed("The gate is not green for this commit:\n" +
                          "\n".join(f"  {c}: {state}: {text}" for c, (state, text) in bad.items()))
         time.sleep(5)

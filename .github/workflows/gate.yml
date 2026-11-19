@@ -26,7 +26,9 @@ jobs:
     runs-on: ubuntu-latest
     concurrency:
       group: gate-${{ github.repository }}-${{ github.event.pull_request.number || github.event.issue.number }}
-      cancel-in-progress: true
+      # One run at a time per PR, and the newest waits its turn: the last verdict written is the one that saw
+      # everything. Cancelling instead let an older, half-informed run overwrite a newer one.
+      cancel-in-progress: false
     steps:
       - name: Get the pipeline scripts from main
         uses: actions/checkout@v4

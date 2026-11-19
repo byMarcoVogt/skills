@@ -21,9 +21,10 @@ def same(a: Path, b: Path) -> bool:
 
 
 def link(target: Path, at: Path) -> None:
-    p = subprocess.run(["cmd", "/c", "mklink", "/J", str(at), str(target)], capture_output=True, text=True)
+    # bytes, not text: cmd answers in the console's code page, which Python cannot always decode
+    p = subprocess.run(["cmd", "/c", "mklink", "/J", str(at), str(target)], capture_output=True)
     if p.returncode:
-        raise Failed(f"Could not link {at}: {(p.stderr or p.stdout).strip()}")
+        raise Failed(f"Could not link {at}: {(p.stderr or p.stdout).decode('ascii', 'replace').strip()}")
 
 
 def pull(path: Path) -> list[str]:

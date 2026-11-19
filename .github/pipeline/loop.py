@@ -12,7 +12,7 @@ import datetime
 import subprocess
 from pathlib import Path
 
-from common import Failed, api, config, main, paged, run
+from common import NO_WINDOW, Failed, api, config, main, paged, run
 from sync import sync
 
 HERE = Path(__file__).resolve().parent
@@ -48,7 +48,7 @@ def build(repo: dict, issue: dict, cfg: dict) -> None:
     with open(out, "a", encoding="utf-8") as f:
         code = subprocess.run(["claude", "-p", prompt, "--permission-mode", "acceptEdits", "--allowedTools",
                                "Bash,PowerShell,Read,Edit,Write,Glob,Grep,Agent,Skill"],
-                              cwd=tree, stdout=f, stderr=subprocess.STDOUT).returncode
+                              cwd=tree, stdout=f, stderr=subprocess.STDOUT, creationflags=NO_WINDOW).returncode
     log(f"{slug}#{n}: builder ended with code {code}")
     if code:
         api(f"repos/{slug}/issues/{n}/labels", "POST", {"labels": ["needs-you"]})

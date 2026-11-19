@@ -6,6 +6,9 @@ import sys
 from pathlib import Path
 
 CONFIG = Path(os.environ.get("SKILL_PIPELINE_CONFIG", Path.home() / ".claude" / "skill-pipeline.json"))
+# The scheduled loop runs without a console (pythonw). Without this flag Windows opens a terminal window for
+# every program it starts. Every subprocess call in this folder passes it; a test checks that.
+NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 CONTEXTS = ("pipeline/title", "pipeline/version", "pipeline/evidence", "pipeline/protected-files")
 
 
@@ -14,7 +17,8 @@ class Failed(Exception):
 
 
 def run(args: list[str], cwd=None, check=True, stdin: str | None = None) -> str:
-    p = subprocess.run(args, cwd=cwd, input=stdin, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    p = subprocess.run(args, cwd=cwd, input=stdin, capture_output=True, text=True, encoding="utf-8", errors="replace",
+                       creationflags=NO_WINDOW)
     if check and p.returncode:
         raise Failed(f"{' '.join(args[:4])} ...: {(p.stderr or p.stdout).strip()[:400]}")
     return p.stdout
@@ -29,7 +33,8 @@ def api(path: str, method: str = "GET", fields: dict | None = None, raw: bool = 
     if fields is not None:
         args += ["--input", "-"]
         stdin = json.dumps(fields)
-    p = subprocess.run(args, input=stdin, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    p = subprocess.run(args, input=stdin, capture_output=True, text=True, encoding="utf-8", errors="replace",
+                       creationflags=NO_WINDOW)
     if p.returncode:
         if "HTTP 404" in p.stderr:
             return None

@@ -169,7 +169,18 @@ class EvidenceCommand(unittest.TestCase):
         self.assertIn("model=gpt-6.2-sol effort=xhigh -->", body)
         self.assertEqual(body.splitlines()[1], "### QA evidence: pass, by `gpt-6.2-sol` at effort `xhigh`")
         self.assertIn("read from route's record of that run", body)
-        self.assertIn("/runs/project-1/RUN1`", body)
+        self.assertIn("`project-1/RUN1` in route's runs folder", body)
+
+    def test_no_local_path_reaches_the_comment(self):
+        """The comment may be public: it names the project folder and the run, not where they lie on this machine."""
+        import os
+        import tempfile
+        body = self.post(["--route-run", "RUN1"], {"state": "ok", "model": "gpt-6.2-sol", "effort": "xhigh"})
+        for private in (tempfile.gettempdir(), os.path.expanduser("~"), os.environ.get("USERNAME") or "no-user-name-set"):
+            for spelling in (private, private.replace("\\", "/")):
+                self.assertNotIn(spelling.lower(), body.lower())
+        self.assertNotIn(":/", body)
+        self.assertNotIn(":\\", body)
         self.assertTrue(self.counts(body))
 
     def test_a_route_run_without_an_answer_is_not_evidence(self):

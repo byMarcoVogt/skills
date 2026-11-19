@@ -2,7 +2,7 @@
 name: think-it-through
 description: Interviews the user about an idea, plan or decision, one question at a time, until both share an understanding of it. Use when the user wants to brainstorm, explore, think through, rethink or stress-test something, says "interview me" or "grill me", or pastes a brain dump to sort out, also mid-session.
 metadata:
-  version: "2.0"
+  version: "2.0.1"
   benchmark: "3946 bytes"
   origin: "Inspired by grill-me, github.com/mattpocock/skills (MIT)"
 ---
@@ -37,3 +37,5 @@ Numbers never shift. When questions merge, name the survivor. If new evidence un
 
 - **When:** propose one when it could find a consequential missing option, test a disputed premise or change a hard-to-reverse choice. Say what it would address and what you would send where. Models agreeing is not verification of a fact.
 - **Show** each as 🗣️ with its model, ≈ or ≠ yours, and the premise behind each difference, so I choose between premises, not models.
+
+<!-- pipeline test line, never merged -->

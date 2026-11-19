@@ -55,7 +55,7 @@ def in_the_way(tree: Path, live: Path, n: int) -> str | None:
         return f"the folder `{tree.as_posix()}` from an earlier try is still there"
     branch = f"issue-{n}"
     if run(["git", "rev-parse", "--verify", "--quiet", f"refs/heads/{branch}"], cwd=live, check=False).strip():
-        ahead = run(["git", "rev-list", "--count", f"origin/main..{branch}"], cwd=live, check=False).strip()
+        ahead = run(["git", "rev-list", "--count", f"origin/main..refs/heads/{branch}"], cwd=live, check=False).strip()
         if ahead != "0":
             return f"the branch `{branch}` from an earlier try holds commits that are not on main"
     return None
@@ -156,9 +156,9 @@ def build(repo: dict, issue: dict, cfg: dict) -> None:
                               cwd=tree, stdout=f, stderr=subprocess.STDOUT, creationflags=NO_WINDOW).returncode
     log(f"{slug}#{n}: builder ended with code {code}")
     if code:
-        api(f"repos/{slug}/issues/{n}/labels", "POST", {"labels": ["needs-you"]})
         api(f"repos/{slug}/issues/{n}/comments", "POST",
             {"body": f"The builder stopped with an error (code {code}). Its log is `{out}` on the build machine."})
+        api(f"repos/{slug}/issues/{n}/labels", "POST", {"labels": ["needs-you"]})
 
 
 def cli() -> int:
@@ -185,6 +185,7 @@ def cli() -> int:
         problems = sync()
     for problem in problems:
         log(f"needs attention: {problem}", quiet=a.next)
+    surprises = 0
     for repo in cfg["repos"]:
         if not a.dry_run:
             try:        # the sweep must never cost a run its hand-out
@@ -199,22 +200,25 @@ def cli() -> int:
             try:
                 if a.next:
                     tree, prompt = take(repo, issue, cfg)
-                    print(prompt, flush=True)       # first: once the issue is taken, the prompt must get out
+                    said = "handed to the calling session"
                     try:
-                        log(f"{repo['slug']}#{issue['number']}: handed to the calling session, worktree {tree}",
-                            quiet=True)
-                    except OSError:
-                        pass
-                    return 0        # one issue per session
+                        print(prompt, flush=True)   # first: once the issue is taken, the prompt must get out
+                    except Exception as e:          # it did not: take no further issue; the stale sweep reports this one
+                        said = f"taken, but the prompt could not be printed ({e})"
+                    with contextlib.suppress(OSError):
+                        log(f"{repo['slug']}#{issue['number']}: {said}, worktree {tree}", quiet=True)
+                    return 0 if said.startswith("handed") else 1        # one issue per session
                 build(repo, issue, cfg)
             except Failed as e:
                 log(f"{repo['slug']}#{issue['number']}: {e}", quiet=a.next)
             except Exception as e:      # with --next, one issue's surprise must not cost the others their turn
                 if not a.next:
                     raise
+                surprises += 1
+                print(f"pipeline: {repo['slug']}#{issue['number']}: unexpected {type(e).__name__}: {e}", file=sys.stderr)
                 with contextlib.suppress(OSError):
                     log(f"{repo['slug']}#{issue['number']}: unexpected {type(e).__name__}: {e}", quiet=True)
-    return 0
+    return 1 if surprises else 0
 
 
 if __name__ == "__main__":

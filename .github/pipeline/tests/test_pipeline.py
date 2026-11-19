@@ -363,6 +363,46 @@ class Stale(unittest.TestCase):
         self.assertEqual([i["number"] for i in loop.stale(issues, now)], [1])
 
 
+class Words(unittest.TestCase):
+    """Wherever the loop asks for the owner, the comment goes out before 'needs-you': the label makes the loop
+    leave the issue alone, so it may only stick once the words are there."""
+    def calls_when_the_comment_fails(self, act):
+        import loop
+        from unittest import mock
+        calls = []
+
+        def api(path, method="GET", fields=None, raw=False):
+            calls.append(path.rsplit("/", 1)[-1])
+            if path.endswith("/comments"):
+                raise loop.Failed("network")
+
+        with mock.patch.object(loop, "api", api), mock.patch.object(loop, "log", lambda *a, **k: None):
+            with self.assertRaises(loop.Failed):
+                act(loop, mock)
+        return calls
+
+    def test_stale_sweep(self):
+        old = [{"number": 30, "labels": [{"name": "in-progress"}], "updated_at": "2020-01-01T00:00:00Z"}]
+
+        def act(loop, mock):
+            with mock.patch.object(loop, "paged", lambda path: old):
+                loop.flag_stale("owner/repo")
+
+        self.assertEqual(self.calls_when_the_comment_fails(act), ["comments"])
+
+    def test_old_mode_builder_error(self):
+        import tempfile
+
+        def act(loop, mock):
+            done = mock.Mock(returncode=3)
+            with mock.patch.object(loop, "take", lambda repo, issue, cfg: (Path(tempfile.mkdtemp()), "PROMPT")), \
+                    mock.patch.object(loop, "LOGS", Path(tempfile.mkdtemp())), \
+                    mock.patch.object(loop.subprocess, "run", lambda *a, **k: done):
+                loop.build({"slug": "owner/repo", "path": "C:/live"}, {"number": 7, "title": "t"}, {})
+
+        self.assertEqual(self.calls_when_the_comment_fails(act), ["comments"])
+
+
 class Next(unittest.TestCase):
     """What --next prints is taken as instructions by a session: only the prompt, for one issue."""
     def go(self, ready, take):
@@ -409,6 +449,15 @@ class Next(unittest.TestCase):
 
         ready = {"o/a": [{"number": 1, "title": "x"}], "o/b": [{"number": 3, "title": "z"}]}
         self.assertEqual(self.go(ready, take), (0, "PROMPT 3\n"))
+
+    def test_a_surprise_does_not_look_like_nothing_ready(self):
+        """An unexpected error on one issue: the next one still gets its turn, and the run ends with an error
+        when nothing was handed out, so that a permanent fault is not mistaken for an empty queue."""
+        def take(repo, issue, cfg):
+            raise ValueError("not json")
+
+        ready = {"o/a": [{"number": 1, "title": "x"}]}
+        self.assertEqual(self.go(ready, take), (1, ""))
 
 
 if __name__ == "__main__":

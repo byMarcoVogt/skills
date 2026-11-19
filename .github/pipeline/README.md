@@ -16,4 +16,6 @@ How a change gets from a branch to main in this repo and in the private skills r
 
 A change under `.github/` needs the owner's `owner-approved` label on the PR. Tags and releases are made by the release workflow, never by hand.
 
+The loop: a scheduled task in the Claude app runs `python P/loop.py --next` every hour. It takes one issue marked `ready`, makes its worktree and prints the builder's instructions; when nothing is ready it prints nothing.
+
 Tests: `python -m unittest discover -s .github/pipeline/tests`

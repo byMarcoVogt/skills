@@ -1,0 +1,42 @@
+name: Gate
+
+# Judges every pull request: title, version, evidence, protected files. The verdict is written as four commit
+# statuses on the PR's newest commit, and branch protection requires all four.
+#
+# pull_request_target and issue_comment both run this file as it is on main, never the PR's copy, and the
+# scripts are checked out from main as well. So a PR cannot change the checks that judge it. Nothing from the
+# PR is executed: the gate only reads it through the API.
+
+on:
+  pull_request_target:
+    types: [opened, edited, synchronize, reopened, labeled, unlabeled]
+  issue_comment:
+    types: [created, edited, deleted]
+  workflow_call:
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+  statuses: write
+
+jobs:
+  gate:
+    if: github.event_name != 'issue_comment' || github.event.issue.pull_request
+    runs-on: ubuntu-latest
+    concurrency:
+      group: gate-${{ github.repository }}-${{ github.event.pull_request.number || github.event.issue.number }}
+      cancel-in-progress: true
+    steps:
+      - name: Get the pipeline scripts from main
+        uses: actions/checkout@v4
+        with:
+          repository: byMarcoVogt/skills
+          ref: main
+          sparse-checkout: .github/pipeline
+          persist-credentials: false
+      - name: Judge the pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number || github.event.issue.number }}
+        run: python .github/pipeline/gate.py pr --repo "$GITHUB_REPOSITORY" --pr "$PR" --post

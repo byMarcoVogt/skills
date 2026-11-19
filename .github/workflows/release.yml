@@ -1,0 +1,33 @@
+name: Release
+
+# After every merge into main: the skill whose version has no tag yet gets its tag (skill-name--v1.5.0) and a
+# release whose notes are the merged PR's title. A script does this, not a model.
+
+on:
+  push:
+    branches: [main]
+  workflow_call:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get this repo at the merged commit
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Get the pipeline scripts from main
+        uses: actions/checkout@v4
+        with:
+          repository: byMarcoVogt/skills
+          ref: main
+          sparse-checkout: .github/pipeline
+          path: .pipeline-src
+          persist-credentials: false
+      - name: Tag and release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python .pipeline-src/.github/pipeline/release.py --repo "$GITHUB_REPOSITORY" --root .

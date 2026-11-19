@@ -1,0 +1,19 @@
+# Pipeline
+
+How a change gets from a branch to main in this repo and in the private skills repo. The rules are enforced by the gate on GitHub, by local git hooks and by a Claude Code hook. This page only lists the commands.
+
+`P` stands for this folder in the live clone of `byMarcoVogt/skills` (the private repo uses the same scripts).
+
+| Step | Command |
+|---|---|
+| Start | `git -C <live clone> worktree add <worktrees>/<repo>/<branch> -b <branch> origin/main` and work there. The live clone itself is read-only. |
+| Version | `python P/bump.py --title "fix: ..."` writes the number the title asks for. One PR changes one skill. |
+| Pull request | Push the branch and open a PR. The title starts with `fix: `, `feat: ` or `feat!: `. |
+| Evidence | `python P/evidence.py --repo <owner/name> --pr <n> --kind review --result pass --file report.md`, and the same with `--kind qa`. Review and QA come from agents other than the builder. A new commit voids both. |
+| Merge | `python P/merge.py --repo <owner/name> --pr <n>` merges when the gate is green, waits for the tag and updates this machine. |
+| Undo | `python P/undo.py <skill>` goes back one version. Do this first when live use breaks, then fix in a new PR. |
+| Check | `python P/gate.py pr --repo <owner/name> --pr <n>` shows what the gate says, without writing anything. |
+
+A change under `.github/` needs the owner's `owner-approved` label on the PR. Tags and releases are made by the release workflow, never by hand.
+
+Tests: `python -m unittest discover -s .github/pipeline/tests`

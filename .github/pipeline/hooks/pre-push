@@ -1,0 +1,20 @@
+#!/bin/sh
+# Before anything leaves this machine: no push to main, no tags by hand, the same version rule GitHub applies,
+# and a scan for keys and tokens in what is being pushed.
+here=$(dirname "$0")
+zero=0000000000000000000000000000000000000000
+while read local_ref local_sha remote_ref remote_sha; do
+  case "$remote_ref" in
+    refs/heads/main|refs/heads/master)
+      echo "pipeline: nobody pushes to main. Push your branch and open a pull request." >&2; exit 1 ;;
+    refs/tags/*)
+      echo "pipeline: tags come from the release workflow after a merge." >&2; exit 1 ;;
+  esac
+  [ "$local_sha" = "$zero" ] && continue
+  python "$here/../gate.py" local --base origin/main --head "$local_sha" >&2 || exit 1
+  if command -v gitleaks >/dev/null 2>&1; then
+    gitleaks git --no-banner --redact --log-opts="origin/main..$local_sha" >&2 || {
+      echo "pipeline: this push looks like it holds a key or token. Nothing was pushed." >&2; exit 1; }
+  fi
+done
+exit 0

@@ -1,0 +1,7 @@
+#!/bin/sh
+# Nobody commits on main: main only moves through merged pull requests.
+branch=$(git rev-parse --abbrev-ref HEAD)
+if [ "$branch" = "main" ] || [ "$branch" = "master" ]; then
+  echo "pipeline: no commits on main. Work on a branch in a worktree: git worktree add <folder> -b <branch> origin/main" >&2
+  exit 1
+fi

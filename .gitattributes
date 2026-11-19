@@ -1,0 +1,2 @@
+# git hooks are shell scripts: they need Unix line endings on every machine
+.github/pipeline/hooks/* text eol=lf

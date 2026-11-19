@@ -1,6 +1,7 @@
 """Shared plumbing: run a command, talk to GitHub through gh, read this machine's pipeline config."""
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -25,7 +26,11 @@ def run(args: list[str], cwd=None, check=True, stdin: str | None = None) -> str:
 
 
 def api(path: str, method: str = "GET", fields: dict | None = None, raw: bool = False):
-    """One GitHub API call through gh. A 404 gives None."""
+    """One GitHub API call through gh. A 404 gives None. Text sent to a public repo passes the privacy check first."""
+    m = re.match(r"repos/([\w.-]+/[\w.-]+)/", path)
+    if fields and m and method in ("POST", "PATCH", "PUT"):
+        import privacy      # privacy imports this module; loaded here, at the first write
+        privacy.guard(m.group(1), fields)
     args = ["gh", "api", path, "-X", method]
     if raw:
         args += ["-H", "Accept: application/vnd.github.raw"]

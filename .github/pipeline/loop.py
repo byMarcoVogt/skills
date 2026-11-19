@@ -157,7 +157,8 @@ def build(repo: dict, issue: dict, cfg: dict) -> None:
     log(f"{slug}#{n}: builder ended with code {code}")
     if code:
         api(f"repos/{slug}/issues/{n}/comments", "POST",
-            {"body": f"The builder stopped with an error (code {code}). Its log is `{out}` on the build machine."})
+            {"body": f"The builder stopped with an error (code {code}). Its log is `{out.name}` in the pipeline's "
+                     "log folder on the build machine."})
         api(f"repos/{slug}/issues/{n}/labels", "POST", {"labels": ["needs-you"]})
 
 

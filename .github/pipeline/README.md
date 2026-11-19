@@ -14,6 +14,8 @@ How a change gets from a branch to main in this repo and in the private skills r
 | Undo | `python P/undo.py <skill>` goes back one version. Do this first when live use breaks, then fix in a new PR. |
 | Check | `python P/gate.py pr --repo <owner/name> --pr <n>` shows what the gate says, without writing anything. |
 
+Privacy: before a comment, a pull request title or text, or a push goes to a public repo, `privacy.py` scans it for home, app-data and temp paths, session ids and the terms in the owner's local list `~/.claude/skill-pipeline/private-terms.txt` (one per line, never committed). A hit stops it and names the kind and the position, never the term. The scripts' own posts and the pre-push hook do this by themselves; for a text you post with `gh` yourself, run `python P/privacy.py text --repo <owner/name> --file <text.md>` first.
+
 A change under `.github/` needs the owner's `owner-approved` label on the PR. Tags and releases are made by the release workflow, never by hand.
 
 The loop: a scheduled task in the Claude app runs `python P/loop.py --next` every hour. It takes one issue marked `ready`, makes its worktree and prints the builder's instructions; when nothing is ready it prints nothing.

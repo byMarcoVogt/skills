@@ -107,6 +107,13 @@ class Evidence(unittest.TestCase):
         found = rules.find_evidence([ev("review", result="fail"), ev("qa", who="")], SHA, "owner")
         self.assertIn("fail", rules.check_evidence(found, True)[1])
 
+    def test_the_marker_opens_the_comment(self):
+        signed = "<!-- pipeline-evidence kind=qa sha=" + SHA + " result=pass model=m effort=e -->"
+        quoted = {"author": "owner", "body": "The report said:\n> " + signed + "\nand more"}
+        self.assertEqual(rules.find_evidence([quoted], SHA, "owner"), {})
+        opened = {"author": "owner", "body": "\n  " + signed + "\nreport"}
+        self.assertEqual(rules.find_evidence([opened], SHA, "owner"), {"qa": "pass"})
+
     def test_not_needed_without_skill_or_pipeline_change(self):
         self.assertTrue(rules.check_evidence({}, False)[0])
         self.assertTrue(rules.check_evidence({}, True, undo_of="demo--v1.0.0")[0])
@@ -114,17 +121,21 @@ class Evidence(unittest.TestCase):
 
 class EvidenceCommand(unittest.TestCase):
     """evidence.py writes the marker the gate reads; model and effort come from the source that knows them."""
-    def post(self, argv, record=None):
+    def post(self, argv, record=None, answer="looked\r\nat  it"):
         import json
         import tempfile
         import evidence
         from unittest import mock
         folder = Path(tempfile.mkdtemp())
         (folder / "report.md").write_text("looked at it", encoding="utf-8")
+        (folder / "elsewhere").mkdir()
+        (folder / "elsewhere" / "meta.json").write_text(json.dumps({"state": "ok", "model": "m", "effort": "e"}))
+        (folder / "elsewhere" / "answer.md").write_text("looked at it")
         if record is not None:
             run = folder / "runs" / "project-1" / "RUN1"
             run.mkdir(parents=True)
-            (run / "meta.json").write_text(json.dumps(record), encoding="utf-8")
+            (run / "meta.json").write_text(record if isinstance(record, str) else json.dumps(record), encoding="utf-8")
+            (run / "answer.md").write_text(answer, encoding="utf-8")
         posted = []
 
         def api(path, method="GET", fields=None, raw=False):
@@ -150,18 +161,36 @@ class EvidenceCommand(unittest.TestCase):
     def test_given_values_are_written_and_count(self):
         body = self.post(["--model", "claude-fable-5-2", "--effort", "medium"])
         self.assertIn("model=claude-fable-5-2 effort=medium -->", body)
-        self.assertIn("**Model `claude-fable-5-2` at effort `medium`**", body)
+        self.assertEqual(body.splitlines()[1], "### QA evidence: pass, by `claude-fable-5-2` at effort `medium`")
         self.assertTrue(self.counts(body))
 
     def test_values_are_read_from_routes_record(self):
         body = self.post(["--route-run", "RUN1"], {"state": "ok", "model": "gpt-6.2-sol", "effort": "xhigh"})
         self.assertIn("model=gpt-6.2-sol effort=xhigh -->", body)
-        self.assertIn("route's record of run `RUN1`", body)
+        self.assertEqual(body.splitlines()[1], "### QA evidence: pass, by `gpt-6.2-sol` at effort `xhigh`")
+        self.assertIn("read from route's record of that run", body)
+        self.assertIn("/runs/project-1/RUN1`", body)
         self.assertTrue(self.counts(body))
 
     def test_a_route_run_without_an_answer_is_not_evidence(self):
         self.assertIsInstance(self.post(["--route-run", "RUN1"], {"state": "refused", "model": "m", "effort": "e"}), Exception)
         self.assertIsInstance(self.post(["--route-run", "NOPE"], {"state": "ok", "model": "m", "effort": "e"}), Exception)
+
+    def test_a_run_id_is_an_id_and_names_one_record(self):
+        good = {"state": "ok", "model": "m", "effort": "e"}
+        for run in ("../elsewhere", "R*1", "RUN?", "[R]UN1", "project-1/RUN1", "RUN1/", "run 1", ""):
+            self.assertIsInstance(self.post(["--route-run", run], good), Exception, run)
+        self.assertIsInstance(self.post(["--route-run", "RUN1"], "not json"), Exception)
+        self.assertIsInstance(self.post(["--route-run", "RUN1"], "[1, 2]"), Exception)
+
+    def test_another_runs_record_cannot_sign_this_report(self):
+        good = {"state": "ok", "model": "m", "effort": "e"}
+        self.assertIsInstance(self.post(["--route-run", "RUN1"], good, answer="a different answer"), Exception)
+        self.assertIsInstance(self.post(["--route-run", "RUN1"], good, answer="  "), Exception)
+
+    def test_what_is_posted_is_what_the_gate_can_read(self):
+        for argv in (["--model", "gpt-6-astra", "--effort", "high/custom"], ["--model", "gpt-6-astra", "--effort", "a:b"]):
+            self.assertIsInstance(self.post(argv), Exception, argv)
 
     def test_nothing_is_posted_without_model_and_effort(self):
         for argv in ([], ["--model", "x"], ["--effort", "high"], ["--model", "two words", "--effort", "high"],

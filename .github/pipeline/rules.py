@@ -9,8 +9,9 @@ UNDO_TITLE = re.compile(r"^fix: undo (?P<skill>[a-z0-9][a-z0-9-]*) to v(?P<versi
 VERSION_LINE = re.compile(r"""^(?P<head>\s*version:\s*)(?P<q>["']?)(?P<v>\d+(?:\.\d+){1,2})(?P=q)\s*$""")
 # Evidence is posted from the owner's account, so the marker itself has to say who checked: the model and the
 # reasoning effort it ran at. 'unknown' is allowed where a value cannot be had; leaving them out is not.
+MODEL, EFFORT = r"[A-Za-z0-9._:/-]+", r"[A-Za-z0-9._-]+"      # evidence.py checks its values against the same two
 EVIDENCE = re.compile(r"<!-- pipeline-evidence kind=(review|qa) sha=([0-9a-f]{40}) result=(pass|fail)"
-                      r"(?: model=([A-Za-z0-9._:/-]+) effort=([A-Za-z0-9._-]+))? -->")
+                      rf"(?: model=({MODEL}) effort=({EFFORT}))? -->")
 UNSIGNED = "unsigned"                # evidence that does not name its model and effort
 EVIDENCE_KINDS = ("review", "qa")
 PROTECTED = (".github/",)            # the checks that judge a PR; agents may not change them
@@ -145,7 +146,7 @@ def find_evidence(comments: list[dict], head_sha: str, owner: str) -> dict[str, 
         if (c.get("author") or "").lower() != owner.lower():
             continue
         body = c.get("body") or ""
-        m = EVIDENCE.search(body)
+        m = EVIDENCE.match(body.lstrip())       # the marker opens the comment; one quoted inside a report is text
         if m and m.group(2) == head_sha and body.replace(m.group(0), "").strip():
             found[m.group(1)] = m.group(3) if m.group(4) and m.group(5) else UNSIGNED
     return found

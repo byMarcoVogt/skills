@@ -203,5 +203,15 @@ class NoWindow(unittest.TestCase):
                     self.assertTrue(flags, f"{path.name}:{node.lineno} starts a program without creationflags=NO_WINDOW")
 
 
+class LoopPrompt(unittest.TestCase):
+    def test_fills_in_with_what_the_loop_passes(self):
+        """A stray brace in the prompt would crash the scheduled run after the issue is already taken."""
+        import string
+        text = (Path(__file__).resolve().parent.parent / "loop-prompt.md").read_text(encoding="utf-8")
+        fields = {name for _, name, _, _ in string.Formatter().parse(text) if name is not None}
+        self.assertEqual(fields, {"number", "slug", "title", "pipeline"})
+        text.format(number=1, slug="owner/repo", title='a {b} "c"', pipeline="P")
+
+
 if __name__ == "__main__":
     unittest.main()

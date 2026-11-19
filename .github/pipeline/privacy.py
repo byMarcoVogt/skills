@@ -108,13 +108,23 @@ HUNK = re.compile(r"^@@ -\S+ \+(\d+)(?:,\d+)? @@")
 
 
 def scan_push(base: str, head: str, terms: list[str], cwd=None) -> list[Hit]:
-    """What the push adds: the added lines of its diff against main, and the messages of its commits."""
-    hits, path, number = [], "", 0
-    diff = run(["git", "diff", "--unified=0", "--no-color", "--no-ext-diff", f"{base}...{head}"], cwd=cwd)
+    """What the push adds: the names of the files it adds or changes, the added lines of its diff against main,
+    and the messages of its commits. A file whose name holds a hit is named by its number, not by its path."""
+    hits, shown, path, number, header = [], {}, "", 0, False
+    names = run(["git", "-c", "core.quotePath=false", "diff", "--name-only", "--no-renames", f"{base}...{head}"], cwd=cwd).splitlines()
+    for i, name in enumerate(names, 1):       # binary files too: they have no '+++' line below
+        found = scan(name, terms)
+        shown[name] = f"file {i} of the push" if found else name
+        hits += [Hit(h.kind, 1, h.column, f"the name of file {i} of the push") for h in found]
+    diff = run(["git", "-c", "core.quotePath=false", "diff", "--unified=0", "--no-color", "--no-ext-diff", "--no-renames", f"{base}...{head}"], cwd=cwd)
     for line in diff.splitlines():
-        if line.startswith("+++ "):
-            path = line[6:] if line.startswith("+++ b/") else line[4:]
+        if line.startswith("diff --git "):
+            header = True       # until the first hunk, '+++ ' is the file's header, not an added line
+        elif header and line.startswith("+++ "):
+            name = line[6:] if line.startswith("+++ b/") else line[4:]
+            path = shown.get(name, "a file of the push")
         elif HUNK.match(line):
+            header = False
             number = int(HUNK.match(line).group(1))
         elif line.startswith("+"):
             hits += scan(line[1:], terms, where=path, first_line=number)

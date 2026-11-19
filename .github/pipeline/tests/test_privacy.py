@@ -145,7 +145,7 @@ class Posting(unittest.TestCase):
 
 class Push(unittest.TestCase):
     """What a push adds to a public repo: the added lines and the commit messages."""
-    def repo(self, added: str, message: str = "fix: something") -> tuple[Path, str]:
+    def repo(self, added: str, message: str = "fix: something", name: str = "new.md") -> tuple[Path, str]:
         root = Path(tempfile.mkdtemp())
         git = lambda *a: subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@example.com",
                                          "-c", "core.hooksPath=" + os.devnull, *a], cwd=root, check=True,
@@ -155,7 +155,8 @@ class Push(unittest.TestCase):
         git("add", "-A")
         git("commit", "-q", "-m", "start")
         git("checkout", "-q", "-b", "work")
-        (root / "new.md").write_text(f"one\ntwo\n{added}\n", encoding="utf-8")
+        (root / name).parent.mkdir(parents=True, exist_ok=True)
+        (root / name).write_text(f"one\ntwo\n{added}\n", encoding="utf-8")
         git("add", "-A")
         git("commit", "-q", "-m", message)
         return root, git("rev-parse", "HEAD").strip()
@@ -164,6 +165,21 @@ class Push(unittest.TestCase):
         root, head = self.repo(f"three {TERM}")
         hits = privacy.scan_push("main", head, [TERM], cwd=root)
         self.assertEqual([(h.kind, h.where, h.line) for h in hits], [("owner's term", "new.md", 3)])
+
+    def test_file_names_are_checked_and_never_printed(self):
+        root, head = self.repo("three", name=f"{TERM}/SKILL.md")
+        hits = privacy.scan_push("main", head, [TERM], cwd=root)
+        self.assertEqual([h.kind for h in hits], ["owner's term"])
+        root, head = self.repo(f"three {TERM}", name=f"{TERM}/SKILL.md")
+        message = privacy.describe(privacy.scan_push("main", head, [TERM], cwd=root), "This push")
+        self.assertEqual(message.count("owner's term"), 2)
+        self.assertNotIn(TERM, message)
+        self.assertIn("file 1 of the push", message)
+
+    def test_an_added_line_that_looks_like_a_header_is_content(self):
+        root, head = self.repo(f"++ {TERM}")
+        hits = privacy.scan_push("main", head, [TERM], cwd=root)
+        self.assertEqual([(h.where, h.line) for h in hits], [("new.md", 3)])
 
     def test_commit_messages_are_checked(self):
         root, head = self.repo("three", message=f"fix: path {WIN_HOME}")

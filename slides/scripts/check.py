@@ -51,8 +51,8 @@ def find_chrome():
     hits = [h for base in bases for pat in ("chromium_headless_shell-*", "chromium-*")
             for d in sorted(base.glob(pat), reverse=True) for h in sorted(d.rglob("*")) if h.name in names and h.is_file()]
     if not hits:
-        sys.exit("No Chromium found. Install one with: pip install playwright && python -m playwright install "
-                 "chromium-headless-shell, or set CHROME to a Chrome or Chromium binary.")
+        sys.exit("No Chromium found. Install one with two commands, pip install playwright, then python -m playwright "
+                 "install chromium-headless-shell. Or set CHROME to a Chrome or Chromium binary.")
     return str(hits[0])
 
 
@@ -66,8 +66,9 @@ def rules(tokens_path):
     col = {x["name"]: (x["value"]["light"] if isinstance(x["value"], dict) else x["value"]) for x in t["color"]["tokens"]}
     sizes = [px(s["fontSize"]) for g in t["type"]["groups"] for s in g["styles"]]
     missing = [k for k in ("margin-top", "margin-side", "margin-bottom", "footer-rule", "title-line-max") if k not in sp]
+    missing += [k for k in ("muted", "surface") if not str(col.get(k, "")).startswith("#") or len(col[k]) != 7]
     if missing:
-        sys.exit(f"tokens.json lacks {', '.join(missing)}; the check takes every position from the tokens.")
+        sys.exit(f"tokens.json lacks {', '.join(missing)} (colours as #rrggbb); the check takes them from the tokens.")
     fam = t["type"].get("families", {})
     css = ":root{" + "".join(f"--{k}:{v};" for k, v in col.items()) + "".join(f"--{k}:{v};" for k, v in sp.items()) +         "".join(f"--{x['name']}:{x['value']};" for x in t.get("radius", {}).get("tokens", [])) +         "".join(f"--font-{k}:{v};" for k, v in fam.items()) + "}"
     h2rgb = lambda h: "rgb(%d, %d, %d)" % tuple(int(h.lstrip("#")[i:i + 2], 16) for i in (0, 2, 4))

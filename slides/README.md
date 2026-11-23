@@ -69,7 +69,7 @@ python -m playwright install chromium-headless-shell
 
 Or point the `CHROME` variable at any Chrome or Chromium you have.
 
-**Your own design system.** Put its name in the marked line at the top of `SKILL.md`, or leave that line empty to be asked each time. The check then reads your system's `tokens.json`. It needs the spacing tokens `margin-top`, `margin-side`, `margin-bottom`, `footer-rule` and `title-line-max` and the colour tokens `muted` and `surface`, and it expects slides with a title and a footer rule. Where those are missing, the skill says "not checked" for that deck.
+**Your own design system.** Put its name in the marked line at the top of `SKILL.md`, or leave that line empty to be asked each time. The check then reads your system's `tokens.json`. It needs the spacing tokens `margin-top`, `margin-side`, `margin-bottom`, `footer-rule` and `title-line-max` the colour tokens `muted` and `surface` as `#rrggbb`, and the type groups with their font sizes, and it expects slides with a title and a footer rule. Where those are missing, the skill says "not checked" for that deck.
 
 ## License
 

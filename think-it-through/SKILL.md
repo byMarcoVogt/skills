@@ -41,7 +41,7 @@ Slices, steps, budget and models are `ship`'s. Then a fresh agent that never saw
 
 ## The plan file
 
-Where and in the form `ship`'s Lane names; without `ship`, Markdown in `plans/`. Open questions on top. Every decision with a one-line reason and its source: the user's, dated and as they gave it, or marked as a proposal. No steps.
+Where and in the form `ship`'s Lane names; without `ship`, Markdown in `plans/`. Open questions on top. Every decision with a one-line reason and its source: the user's, dated and as they gave it; delegated by the user; or marked as a proposal. No steps.
 
 The trail (pictures, panel results, side questions, drafts) goes into a folder beside the plan, marked at its top as not a source.
 

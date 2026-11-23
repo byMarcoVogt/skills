@@ -75,7 +75,7 @@ A box has a full outline of equal weight or a fill, never a line on one side onl
 - An axis break is two short slanted `slate-300` lines that reach slightly past the bar, with white between them. It is allowed on one outlier bar only, never on the bars being compared.
 - Square corners (`radius-none`).
 
-**Trend arrow** (a change across several bars): a 4px `navy-700` line with an arrowhead, running between points `arrow-lift` (48px) above the bar tops, so it runs parallel to the change. The value sits in a pill just above the line, never on it: `navy-700` fill, `radius-full`, white `data-label`, the relative change ("−27%"). Not on every step, only where the message is. Reference: house deck "Global Economic Growth", slide 5A.
+**Trend arrow** (a change across several bars): a 4px `navy-700` line with an arrowhead, running between points `arrow-lift` (48px) above the bar tops, so it runs parallel to the change. The value sits in a pill just above the line, never on it: `navy-700` fill, `radius-full`, white `data-label`, the relative change ("−27%"). Not on every step, only where the message is.
 
 **Double chart** (losers and gainers): horizontal bars diverging from a centre column of round flags, losses to the left, gains to the right; no country names when the flags are clear; the chart's width follows the longest bar, with notes in the spare end rather than empty space.
 

@@ -28,9 +28,9 @@ What changed, and the rule behind each change:
 - **No numbering without an order.** The four reasons are not a sequence, so each one opens with a bold lead-in instead of a number.
 - **A symbol where it says it faster.** The benchmark is labelled "Ø 3.7" at its end, and the period appears once in the legend.
 - **Readable footer.** No text is smaller than 24px on the 1920 × 1080 canvas: a rule, the source on the left, the deck and page on the right.
-- **Measured notes.** A note sits on a rule exactly as wide as its text, with a leader to the bar it explains.
+- **Short years on the axis.** '21 to '25E instead of 2021 to 2025E, and "E = estimate" once in the footer.
 
-**The check catches what the eye misses.** Before a deck is shown, `scripts/check.py` renders every slide at 1920 × 1080 and measures it against the design system's tokens: overflow, margins, the footer rule, title lines and width, notes against their text, the smallest font size, the minus sign and overlapping text. Each fault comes back with its name and its numbers, so the model can fix it before I look. Its test slide has three planted faults, and the check names each one:
+**The check catches what the eye misses.** Before a deck is shown, `scripts/check.py` renders every slide at 1920 × 1080 and measures it against the design system's tokens. It looks for overflow, margins, the footer rule, title lines and width, notes against their text, the smallest font size, the minus sign and overlapping text. Each fault comes back with its name and its numbers, so the model can fix it before I look. Its test slide has three planted faults, and the check names each one:
 
 ![The check's test slide with three marked faults: a title line 12 px too wide, a note's rule 168 px wider than its text, and panel text cut off at the bottom of its box. Below, the three errors as the check reports them.](../visual-assets/slides/check-catches.webp)
 
@@ -41,8 +41,8 @@ For the same-prompt slide above, the first render's title line was 1,711 px wide
 | Part | What it holds |
 |---|---|
 | `SKILL.md` | How I work with the model: one panel ("Just build it, or do you want to choose?"), content before form, variants in place, nothing from the brief dropped, and no deck shown before it is checked. |
-| `design-system/` | My house style as files: the brand book (`README.md`), `tokens.json`, and ten slide forms, each with a rule sheet and a rendered preview in `previews/`. |
-| `scripts/check.py` | The check. Every position comes from `tokens.json`, nothing is hardcoded. It needs Python 3 and Playwright with Chromium. |
+| `design-system/` | My house style as files: the brand book (`README.md`), `tokens.json`, and ten slide forms, each with a rule sheet and a rendered preview in `previews/`. `components/Cover/` is the design system's own title card, not a slide. |
+| `scripts/check.py` | The check. Margins, the footer rule, the title width, the smallest font size and the colours come from `tokens.json`; the 1920 × 1080 canvas and the house frame (a title, a footer rule) are built in. |
 | `storyline/` | Optional ghost decks: alternative storylines to pick from before any slide is built. |
 
 ## Install
@@ -58,7 +58,18 @@ Or copy manually:
 | Claude Code | `~/.claude/skills/` |
 | Other agents that read `SKILL.md` | that agent's skills folder |
 
-The skill builds in Claude Slides, so it needs a Claude surface with Artifacts. On the first run it offers to create the Marco Vogt Slides design system from `design-system/`. To use your own instead, put its name in the marked line at the top of `SKILL.md`, or leave that line empty to be asked each time.
+The skill builds in Claude Slides, so it needs a Claude surface with Artifacts. On the first run it offers to create the Marco Vogt Slides design system from `design-system/`.
+
+The check needs Python 3 and a Chromium:
+
+```bash
+pip install playwright
+python -m playwright install chromium-headless-shell
+```
+
+Or point the `CHROME` variable at any Chrome or Chromium you have.
+
+**Your own design system.** Put its name in the marked line at the top of `SKILL.md`, or leave that line empty to be asked each time. The check then reads your system's `tokens.json`. It needs the spacing tokens `margin-top`, `margin-side`, `margin-bottom`, `footer-rule` and `title-line-max` and the colour tokens `muted` and `surface`, and it expects slides with a title and a footer rule. Where those are missing, the skill says "not checked" for that deck.
 
 ## License
 

@@ -4,7 +4,7 @@ description: Builds a presentation as a deck in Claude Slides, in the user's des
 argument-hint: "[topic or brief]"
 metadata:
   version: "1.0.0"
-  benchmark: "3968 bytes"
+  benchmark: "4004 bytes"
 ---
 
 # Slides
@@ -39,7 +39,7 @@ Follow `storyline/STORYLINE.md`, publish the ghost decks, and build the deck the
 
 The user's standing request, overriding the Slides type's rule against verifying: no version of the deck is published or shown before it has been checked.
 
-1. Read the design system's `project/tokens.json` with the Artifact tool into a local folder, once per session. For Marco Vogt Slides, `design-system/tokens.json` in this folder is the same file.
+1. Read the design system's `project/tokens.json` with the Artifact tool into a local folder, once per session. If the artifact cannot be read, `design-system/tokens.json` in this folder is the shipped version of Marco Vogt Slides.
 2. Write all of the deck's files locally before the first send. The Slides type sends the index, stylesheet and cover first, and that send already opens the deck: hold it until the whole deck passes. Then run
    `python -I "<this skill's folder>/scripts/check.py" --tokens <tokens.json> <folder holding project/> --shots <folder> --report <report.json>`
 3. Fix every error it names and run it again until all slides pass. Then look at the PNGs of the changed slides for what no script measures: form, fill and balance, the argument. Anything you change after that look is checked again.

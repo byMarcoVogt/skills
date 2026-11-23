@@ -5,7 +5,7 @@
 
 A deck project folder is what a Claude Slides artifact holds under project/ (deck.json + slides/).
 Prints one line per error and "PASS"/"FAIL" per slide; exit code 1 when any slide fails.
-Needs only Python and a Chromium (Playwright's headless shell is found by itself; or set CHROME).
+Needs Python and a Chromium. Playwright's headless shell is found by itself on Windows, macOS and Linux; or set CHROME.
 """
 import argparse, html, json, os, pathlib, re, subprocess, sys, tempfile
 
@@ -43,12 +43,16 @@ SLIDES_BASE = ("section *{box-sizing:border-box}section h1,section h2,section h3
 def find_chrome():
     if os.environ.get("CHROME"):
         return os.environ["CHROME"]
-    base = pathlib.Path(os.environ.get("LOCALAPPDATA", pathlib.Path.home() / "AppData/Local")) / "ms-playwright"
-    names = ("chrome-headless-shell.exe", "chrome-headless-shell", "chrome.exe", "chrome")
-    hits = [h for pat in ("chromium_headless_shell-*/*/*", "chromium-*/*/*") for h in sorted(base.glob(pat), reverse=True)
-            if h.name in names]
+    home = pathlib.Path.home()
+    bases = [pathlib.Path(p) for p in (os.environ.get("PLAYWRIGHT_BROWSERS_PATH"),) if p]
+    bases += [pathlib.Path(os.environ.get("LOCALAPPDATA", home / "AppData/Local")) / "ms-playwright",
+              home / "Library/Caches/ms-playwright", home / ".cache/ms-playwright"]  # Windows, macOS, Linux
+    names = ("chrome-headless-shell.exe", "chrome-headless-shell", "headless_shell", "chrome.exe", "chrome", "Chromium")
+    hits = [h for base in bases for pat in ("chromium_headless_shell-*", "chromium-*")
+            for d in sorted(base.glob(pat), reverse=True) for h in sorted(d.rglob("*")) if h.name in names and h.is_file()]
     if not hits:
-        sys.exit("No Chromium found. Install one with: npx playwright install chromium-headless-shell, or set CHROME.")
+        sys.exit("No Chromium found. Install one with: pip install playwright && python -m playwright install "
+                 "chromium-headless-shell, or set CHROME to a Chrome or Chromium binary.")
     return str(hits[0])
 
 

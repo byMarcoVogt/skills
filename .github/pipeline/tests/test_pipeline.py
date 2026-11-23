@@ -130,6 +130,12 @@ class Evidence(unittest.TestCase):
         self.assertIn("model and effort: qa", text)
         for half in (" model=gpt-6-astra", " effort=high", " model= effort=high", " model=x effort="):
             self.assertFalse(rules.check_evidence(rules.find_evidence([ev("review", who=half), ev("qa")], SHA, "owner"), True)[0], half)
+            self.assertFalse(rules.check_evidence(rules.find_evidence([ev("review"), ev("qa", who=half)], SHA, "owner"), True)[0], half)
+            # a fail always counts, signed or not
+            for kind in ("review", "qa"):
+                found = rules.find_evidence([ev("review"), ev(kind, result="fail", who=half)], SHA, "owner")
+                self.assertFalse(rules.check_evidence(found, True)[0], (kind, half))
+                self.assertEqual(found[kind], "fail", (kind, half))
         # 'unknown' says plainly that a value could not be had, and counts
         found = rules.find_evidence([ev("review", who=" model=claude-fable-5-2 effort=unknown"), ev("qa")], SHA, "owner")
         self.assertTrue(rules.check_evidence(found, True)[0])

@@ -12,7 +12,7 @@ VERSION_LINE = re.compile(r"""^(?P<head>\s*version:\s*)(?P<q>["']?)(?P<v>\d+(?:\
 # reasoning effort it ran at. 'unknown' is allowed where a value cannot be had; leaving them out is not.
 MODEL, EFFORT = r"[A-Za-z0-9._:/-]+", r"[A-Za-z0-9._-]+"      # evidence.py checks its values against the same two
 EVIDENCE = re.compile(r"<!-- pipeline-evidence kind=(review|qa) sha=([0-9a-f]{40}) result=(pass|fail)"
-                      rf"(?: model=({MODEL}) effort=({EFFORT}))?(?: files=([0-9a-f]{{64}}))? -->")
+                      rf"(?: model=({MODEL})?)?(?: effort=({EFFORT})?)?(?: files=([0-9a-f]{{64}}))? -->")
 UNSIGNED = "unsigned"                # evidence that does not name its model and effort
 EVIDENCE_KINDS = ("review", "qa")    # both are read and shown; only a review is required
 REQUIRED = ("review",)
@@ -159,7 +159,8 @@ def find_evidence(comments: list[dict], head_sha: str, owner: str, content: str 
         m = EVIDENCE.match(body.lstrip())       # the marker opens the comment; one quoted inside a report is text
         same = m and (m.group(2) == head_sha or (content and m.group(6) == content))
         if same and body.replace(m.group(0), "").strip():
-            found[m.group(1)] = m.group(3) if m.group(4) and m.group(5) else UNSIGNED
+            # a fail always counts; a pass counts only when it names its model and effort
+            found[m.group(1)] = m.group(3) if m.group(3) == "fail" or (m.group(4) and m.group(5)) else UNSIGNED
     return found
 
 

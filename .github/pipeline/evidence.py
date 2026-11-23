@@ -1,10 +1,11 @@
 """Attach review or QA evidence to a pull request, bound to the content it was given for.
 
-    python evidence.py --repo owner/name --pr 12 --kind review --result pass --file report.md \\
+    python evidence.py --repo owner/name --pr 12 --commit SHA --kind review --result pass --file report.md \\
                        --model claude-fable-5-2 --effort medium
-    python evidence.py --repo owner/name --pr 12 --kind qa --result pass --file report.md --route-run RUN
+    python evidence.py --repo owner/name --pr 12 --commit SHA --kind qa --result pass --file report.md --route-run RUN
 
-The report becomes a PR comment whose first line names the PR's current commit and a hash of its changed files
+--commit is the commit the checker looked at. The report becomes a PR comment whose first line names that commit
+and a hash of its changed files
 with their blob ids. The gate counts it at that commit, and at a later commit whose changed files are the same
 (a merge of main that leaves them alone). A change to one of those files voids it and the evidence has to be
 given again.
@@ -67,7 +68,7 @@ def cli() -> int:
     ap.add_argument("--route-run", help="the id of the route run that produced the report; model and effort are read from it")
     ap.add_argument("--model", help="the exact model id the checker ran on, or 'unknown'")
     ap.add_argument("--effort", help="the reasoning effort the checker ran at, or 'unknown'")
-    ap.add_argument("--commit", help="the full id of the commit the checker looked at; refused if the PR's files moved since")
+    ap.add_argument("--commit", help="required: the full id of the commit the checker looked at; refused if the PR's files moved since")
     a = ap.parse_args()
 
     report = Path(a.file).read_text(encoding="utf-8").strip()
@@ -89,7 +90,9 @@ def cli() -> int:
     if not re.fullmatch(rules.EFFORT, effort):
         raise Failed(f"'{effort}' is not an effort level (letters, digits, . _ -)")
 
-    if a.commit and not re.fullmatch(r"[0-9a-f]{40}", a.commit):
+    if not a.commit:
+        raise Failed("Say which commit was checked: --commit <full sha>, the commit the checker looked at")
+    if not re.fullmatch(r"[0-9a-f]{40}", a.commit):
         raise Failed(f"'{a.commit}' is not a full commit id (40 hex digits)")
     pr = api(f"repos/{a.repo}/pulls/{a.pr}")
     if pr is None:
@@ -98,7 +101,7 @@ def cli() -> int:
     content = rules.files_hash(paged(f"repos/{a.repo}/pulls/{a.pr}/files"))
     if (api(f"repos/{a.repo}/pulls/{a.pr}") or {}).get("head", {}).get("sha") != sha:
         raise Failed("The pull request moved while its files were read; give the evidence again")
-    if a.commit and a.commit != sha:
+    if a.commit != sha:
         # the reviewer looked at an older commit: it counts only if the PR's files are the same there
         at = api(f"repos/{a.repo}/compare/{pr['base']['ref']}...{a.commit}") or {}
         if rules.files_hash(at.get("files") or []) != content:

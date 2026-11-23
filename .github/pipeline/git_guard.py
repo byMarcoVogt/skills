@@ -24,7 +24,7 @@ READ_ONLY = {"status", "log", "diff", "show", "fetch", "pull", "worktree", "bran
              "shortlog", "reflog", "check-ignore", "rev-list", "name-rev", "version", "help", "ls-tree", "gc"}
 GIT = re.compile(r"""\bgit(?:\.exe)?(?P<opts>(?:\s+(?:-c\s+\S+|-C\s+(?:"[^"]*"|'[^']*'|\S+)|--[a-z-]+(?:=\S+)?))*)\s+(?P<sub>[a-z][a-z-]*)""")
 DASH_C = re.compile(r"""-C\s+("[^"]*"|'[^']*'|\S+)""")
-CD = re.compile(r"""\b(?:cd|pushd|set-location|sl|chdir)\s+(?:/d\s+)?("[a-z]:/[^"]*"|'[a-z]:/[^']*'|[a-z]:/[^\s;&|)]*)""")
+CD = re.compile(r"""\b(?:cd|pushd|set-location|sl|chdir)\s+(?:/d\s+)?("[^"]*"|'[^']*'|[^\s;&|)]+)""")
 REMOVE = re.compile(r"\b(rm|rmdir|rd|del|erase|remove-item|ri|move-item|mv|move|ren|rename-item)\b")
 
 GH = re.compile(r"\bgh(?:\.exe)?\s+(?P<sub>[a-z]+)")
@@ -104,9 +104,13 @@ def decide(payload: dict, cfg: dict) -> str | None:
         return masked[start:end.start() if end else len(masked)]
 
     def folder(start: int) -> str:
-        """The last absolute cd before this call, else the session's folder."""
-        moves = [c.group(1).strip("\"'") for c in CD.finditer(norm(raw[:start])) if masked[c.start()] != "_"]
-        return moves[-1] if moves else cwd
+        """Where the cd commands before this call lead, each relative one taken from the one before; else the
+        session's folder."""
+        here = cwd
+        for c in CD.finditer(norm(raw[:start])):
+            if masked[c.start()] != "_":
+                here = resolve(c.group(1).strip("\"'"), here)
+        return here
 
     def pipeline(where: str) -> bool:
         return any(inside(where, p) for p in live) or inside(where, worktrees)

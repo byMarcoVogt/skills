@@ -153,7 +153,7 @@ class Evidence(unittest.TestCase):
 
 class EvidenceCommand(unittest.TestCase):
     """evidence.py writes the marker the gate reads; model and effort come from the source that knows them."""
-    def post(self, argv, record=None, answer="looked\r\nat  it", reviewed=None):
+    def post(self, argv, record=None, answer="looked\r\nat  it", reviewed=None, nocommit=False):
         import json
         import tempfile
         import evidence
@@ -179,7 +179,7 @@ class EvidenceCommand(unittest.TestCase):
             return {"head": {"sha": SHA}, "base": {"ref": "main"}}
 
         args = ["evidence.py", "--repo", "o/r", "--pr", "1", "--kind", "qa", "--result", "pass",
-                "--file", str(folder / "report.md")] + argv
+                "--file", str(folder / "report.md")] + argv + ([] if "--commit" in argv or nocommit else ["--commit", SHA])
         with mock.patch.object(evidence, "api", api), mock.patch.object(evidence, "paged", lambda path: FILES), \
                 mock.patch("sys.argv", args), \
                 mock.patch.dict("os.environ", {"ROUTE_RUNS": str(folder / "runs")}), mock.patch("builtins.print"):
@@ -215,6 +215,9 @@ class EvidenceCommand(unittest.TestCase):
         self.assertIn("moved", str(moved))
         self.assertIn(f"sha={SHA} ", self.post(["--model", "m", "--effort", "e", "--commit", SHA]))
         self.assertIsInstance(self.post(["--model", "m", "--effort", "e", "--commit", "abc"]), Exception)
+
+    def test_the_reviewed_commit_is_required(self):
+        self.assertIsInstance(self.post(["--model", "m", "--effort", "e"], nocommit=True), BaseException)
 
     def test_values_are_read_from_routes_record(self):
         body = self.post(["--route-run", "RUN1"], {"state": "ok", "model": "gpt-6.2-sol", "effort": "xhigh"})
@@ -354,6 +357,11 @@ class Guard(unittest.TestCase):
         self.assertIsNotNone(self.deny("gh pr merge https://github.com/me/skills/pull/3", cwd="C:/elsewhere"))
         self.assertIsNone(self.deny("gh pr merge https://github.com/someone/else/pull/3", cwd=TREE))
         self.assertIsNotNone(self.deny('gh api -X POST "repos/me/skills/statuses/abc" -f state=success', cwd="C:/elsewhere"))
+
+    def test_a_relative_cd_is_followed(self):
+        self.assertIsNotNone(self.deny("cd .worktrees/skills/issue-3 && git push --force origin issue-3", cwd="C:/Claude"))
+        self.assertIsNotNone(self.deny("Set-Location .worktrees; cd skills/issue-3; git push -f", cwd="C:/Claude"))
+        self.assertIsNone(self.deny("cd ../../../../some/other && git push --force origin main", cwd=TREE))
 
     def test_a_quoted_force_refspec_is_a_force_push(self):
         for c in ('git push origin "+main"', "git push origin '+issue-3'"):

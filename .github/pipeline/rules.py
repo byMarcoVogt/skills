@@ -2,6 +2,7 @@
 
 No network and no git in here, so every rule can be tested offline (tests/test_rules.py).
 """
+import hashlib
 import re
 
 TITLE = re.compile(r"^(fix|feat|feat!): \S")
@@ -11,11 +12,11 @@ VERSION_LINE = re.compile(r"""^(?P<head>\s*version:\s*)(?P<q>["']?)(?P<v>\d+(?:\
 # reasoning effort it ran at. 'unknown' is allowed where a value cannot be had; leaving them out is not.
 MODEL, EFFORT = r"[A-Za-z0-9._:/-]+", r"[A-Za-z0-9._-]+"      # evidence.py checks its values against the same two
 EVIDENCE = re.compile(r"<!-- pipeline-evidence kind=(review|qa) sha=([0-9a-f]{40}) result=(pass|fail)"
-                      rf"(?: model=({MODEL}) effort=({EFFORT}))? -->")
+                      rf"(?: model=({MODEL}) effort=({EFFORT}))?(?: files=([0-9a-f]{{64}}))? -->")
 UNSIGNED = "unsigned"                # evidence that does not name its model and effort
-EVIDENCE_KINDS = ("review", "qa")
-PROTECTED = (".github/",)            # the checks that judge a PR; agents may not change them
-OWNER_LABEL = "owner-approved"       # the owner's yes to a change of the protected files
+EVIDENCE_KINDS = ("review", "qa")    # both are read and shown; only a review is required
+REQUIRED = ("review",)
+PROTECTED = (".github/",)            # the checks that judge a PR
 BUMP = {"fix": 2, "feat": 1, "feat!": 0}   # which part of MAJOR.MINOR.PATCH goes up
 
 
@@ -126,17 +127,25 @@ def check_version(title: str, skills: dict[str, tuple[str | None, str | None]]) 
     return False, f"{name}: '{kind}:' needs {fmt(old)} -> {fmt(want)}, found {fmt(new)}. Run bump.py"
 
 
-def check_protected(paths: list[str], owner_approved: bool) -> tuple[bool, str]:
+def check_protected(paths: list[str]) -> tuple[bool, str]:
+    """Kept as a status so branch protection on GitHub need not change; it no longer asks for a label."""
     hit = protected_files(paths)
     if not hit:
         return True, "No pipeline file changed"
-    if owner_approved:
-        return True, f"Pipeline files changed with the owner's '{OWNER_LABEL}' label"
-    return False, f"Changes {hit[0]}: needs the owner's '{OWNER_LABEL}' label"
+    return True, f"Changes {hit[0]}: pipeline files need the same review as any other change"
 
 
-def find_evidence(comments: list[dict], head_sha: str, owner: str) -> dict[str, str]:
-    """The newest evidence per kind that names this exact commit: {'review': 'pass', 'qa': 'fail'}.
+def files_hash(files: list[dict]) -> str:
+    """One id for a PR's content: its changed files (GitHub's pulls/N/files entries) with their blob ids at the
+    head commit. A merge of main that leaves these files alone keeps the id; any change to one of them does not."""
+    lines = sorted(f"{f['filename']} {'-' if f.get('status') == 'removed' else f.get('sha')}" for f in files)
+    lines += sorted(f"{f['previous_filename']} -" for f in files if f.get("previous_filename"))
+    return hashlib.sha256("\n".join(lines).encode("utf-8")).hexdigest()
+
+
+def find_evidence(comments: list[dict], head_sha: str, owner: str, content: str | None = None) -> dict[str, str]:
+    """The newest evidence per kind for this PR's content: {'review': 'pass', 'qa': 'fail'}. A comment counts when
+    it names this exact commit, or when its files hash equals `content`, the hash of the PR's changed files now.
     Evidence that does not name its model and effort comes back as 'unsigned' and does not count.
 
     comments: [{'author': login, 'body': text}] oldest first. Only the owner's account counts, and only a
@@ -147,7 +156,8 @@ def find_evidence(comments: list[dict], head_sha: str, owner: str) -> dict[str, 
             continue
         body = c.get("body") or ""
         m = EVIDENCE.match(body.lstrip())       # the marker opens the comment; one quoted inside a report is text
-        if m and m.group(2) == head_sha and body.replace(m.group(0), "").strip():
+        same = m and (m.group(2) == head_sha or (content and m.group(6) == content))
+        if same and body.replace(m.group(0), "").strip():
             found[m.group(1)] = m.group(3) if m.group(4) and m.group(5) else UNSIGNED
     return found
 
@@ -157,7 +167,7 @@ def check_evidence(found: dict[str, str], needed: bool, undo_of: str | None = No
         return True, f"Undo: the files equal the released {undo_of}"
     if not needed:
         return True, "No skill or pipeline file changed, so no evidence is needed"
-    missing = [k for k in EVIDENCE_KINDS if k not in found]
+    missing = [k for k in REQUIRED if k not in found]
     failed = [k for k in EVIDENCE_KINDS if found.get(k) == "fail"]
     if failed:
         return False, "Evidence says fail: " + ", ".join(failed)
@@ -165,8 +175,8 @@ def check_evidence(found: dict[str, str], needed: bool, undo_of: str | None = No
     if unsigned:
         return False, "Evidence does not name its model and effort: " + ", ".join(unsigned)
     if missing:
-        return False, "No evidence for this exact commit: " + ", ".join(missing)
-    return True, "Review and QA evidence passed for this exact commit"
+        return False, "No evidence for this content: " + ", ".join(missing)
+    return True, "Review passed for this content" + ("; QA passed too" if found.get("qa") == "pass" else "; no QA given")
 
 
 def previous_release(tags: list[str], skill: str, current: tuple[int, int, int]) -> tuple[str, tuple] | None:

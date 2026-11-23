@@ -25,7 +25,7 @@ from sync import sync
 HERE = Path(__file__).resolve().parent
 LOGS = Path.home() / ".claude" / "skill-pipeline"
 LABELS = {"ready": ("0e8a16", "The loop may build this"), "in-progress": ("fbca04", "A builder is on it"),
-          "needs-you": ("d93f0b", "Waiting for the owner"), "owner-approved": ("5319e7", "The owner allows a change of the pipeline files")}
+          "needs-you": ("d93f0b", "Waiting for the owner")}
 
 
 def log(text: str, quiet: bool = False) -> None:

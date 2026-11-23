@@ -1,11 +1,13 @@
-"""Attach review or QA evidence to a pull request, bound to the commit it was given for.
+"""Attach review or QA evidence to a pull request, bound to the content it was given for.
 
     python evidence.py --repo owner/name --pr 12 --kind review --result pass --file report.md \\
                        --model claude-fable-5-2 --effort medium
     python evidence.py --repo owner/name --pr 12 --kind qa --result pass --file report.md --route-run RUN
 
-The report becomes a PR comment whose first line names the PR's current commit. A later commit has another
-id, so the gate no longer counts this comment and the evidence has to be given again.
+The report becomes a PR comment whose first line names the PR's current commit and a hash of its changed files
+with their blob ids. The gate counts it at that commit, and at a later commit whose changed files are the same
+(a merge of main that leaves them alone). A change to one of those files voids it and the evidence has to be
+given again.
 
 Every piece of evidence says which model produced it and at what reasoning effort; the gate does not count it
 otherwise. The values come from whoever knows them, not from the checker describing itself: for a run through
@@ -19,7 +21,7 @@ import re
 from pathlib import Path
 
 import rules
-from common import Failed, api, main
+from common import Failed, api, main, paged
 
 
 RUN_ID = re.compile(r"[A-Za-z0-9-]+")
@@ -90,8 +92,12 @@ def cli() -> int:
     if pr is None:
         raise Failed(f"{a.repo} has no pull request {a.pr}")
     sha = pr["head"]["sha"]
+    content = rules.files_hash(paged(f"repos/{a.repo}/pulls/{a.pr}/files"))
+    if (api(f"repos/{a.repo}/pulls/{a.pr}") or {}).get("head", {}).get("sha") != sha:
+        raise Failed("The pull request moved while its files were read; give the evidence again")
     title = {"review": "Review", "qa": "QA"}[a.kind]
-    body = (f"<!-- pipeline-evidence kind={a.kind} sha={sha} result={a.result} model={model} effort={effort} -->\n"
+    body = (f"<!-- pipeline-evidence kind={a.kind} sha={sha} result={a.result} model={model} effort={effort} "
+            f"files={content} -->\n"
             f"### {title} evidence: {a.result}, by `{model}` at effort `{effort}`\n\n"
             f"Model and effort {source}. For commit `{sha[:10]}`" +
             (f", by {a.by}" if a.by else "") + f".\n\n{report}\n")

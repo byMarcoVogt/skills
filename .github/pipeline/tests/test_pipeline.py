@@ -8,6 +8,7 @@ import git_guard  # noqa: E402
 import rules  # noqa: E402
 
 SHA, OTHER = "a" * 40, "b" * 40
+FILES = [{"filename": "demo/SKILL.md", "status": "modified", "sha": "c" * 40}]
 
 
 def md(version, body="text"):
@@ -74,9 +75,34 @@ class Evidence(unittest.TestCase):
         found = rules.find_evidence([ev("review"), ev("qa")], SHA, "owner")
         self.assertTrue(rules.check_evidence(found, True)[0])
 
-    def test_missing(self):
-        self.assertFalse(rules.check_evidence(rules.find_evidence([ev("review")], SHA, "owner"), True)[0])
+    def test_a_review_is_enough_and_qa_is_optional(self):
+        ok, text = rules.check_evidence(rules.find_evidence([ev("review")], SHA, "owner"), True)
+        self.assertTrue(ok)
+        self.assertIn("no QA given", text)
+        self.assertIn("QA passed", rules.check_evidence(rules.find_evidence([ev("review"), ev("qa")], SHA, "owner"), True)[1])
+        self.assertFalse(rules.check_evidence(rules.find_evidence([ev("qa")], SHA, "owner"), True)[0])
         self.assertFalse(rules.check_evidence({}, True)[0])
+        self.assertFalse(rules.check_evidence(rules.find_evidence([ev("review"), ev("qa", result="fail")], SHA, "owner"), True)[0])
+
+    def test_evidence_follows_the_content(self):
+        files = [{"filename": "demo/SKILL.md", "status": "modified", "sha": "1" * 40},
+                 {"filename": "demo/old.md", "status": "removed", "sha": "2" * 40}]
+        given = rules.files_hash(files)
+        hashed = lambda kind, h=given: ev(kind, who=f" model=m effort=e files={h}")
+        # given at SHA, read at OTHER: the same files with the same blobs, in any order, still count
+        same = rules.files_hash(list(reversed(files)))
+        self.assertEqual(rules.find_evidence([hashed("review")], OTHER, "owner", same), {"review": "pass"})
+        self.assertTrue(rules.check_evidence(rules.find_evidence([hashed("review")], OTHER, "owner", same), True)[0])
+        # one of the files changed, or one more file in the PR: it no longer counts
+        changed = rules.files_hash([dict(files[0], sha="3" * 40), files[1]])
+        more = rules.files_hash(files + [{"filename": "demo/new.md", "status": "added", "sha": "4" * 40}])
+        for now in (changed, more):
+            self.assertEqual(rules.find_evidence([hashed("review")], OTHER, "owner", now), {})
+        # a marker without a hash counts only for its own commit
+        self.assertEqual(rules.find_evidence([ev("review")], OTHER, "owner", same), {})
+        self.assertEqual(rules.find_evidence([ev("review")], SHA, "owner", same), {"review": "pass"})
+        # with a hash, its own commit still counts even when the files moved on
+        self.assertEqual(rules.find_evidence([hashed("review")], SHA, "owner", changed), {"review": "pass"})
 
     def test_a_new_commit_voids_it(self):
         found = rules.find_evidence([ev("review"), ev("qa")], OTHER, "owner")
@@ -97,7 +123,7 @@ class Evidence(unittest.TestCase):
         self.assertFalse(ok)
         self.assertIn("model and effort: qa", text)
         for half in (" model=gpt-6-astra", " effort=high", " model= effort=high", " model=x effort="):
-            self.assertFalse(rules.check_evidence(rules.find_evidence([ev("review"), ev("qa", who=half)], SHA, "owner"), True)[0], half)
+            self.assertFalse(rules.check_evidence(rules.find_evidence([ev("review", who=half), ev("qa")], SHA, "owner"), True)[0], half)
         # 'unknown' says plainly that a value could not be had, and counts
         found = rules.find_evidence([ev("review", who=" model=claude-fable-5-2 effort=unknown"), ev("qa")], SHA, "owner")
         self.assertTrue(rules.check_evidence(found, True)[0])
@@ -146,7 +172,8 @@ class EvidenceCommand(unittest.TestCase):
 
         args = ["evidence.py", "--repo", "o/r", "--pr", "1", "--kind", "qa", "--result", "pass",
                 "--file", str(folder / "report.md")] + argv
-        with mock.patch.object(evidence, "api", api), mock.patch("sys.argv", args), \
+        with mock.patch.object(evidence, "api", api), mock.patch.object(evidence, "paged", lambda path: FILES), \
+                mock.patch("sys.argv", args), \
                 mock.patch.dict("os.environ", {"ROUTE_RUNS": str(folder / "runs")}), mock.patch("builtins.print"):
             try:
                 evidence.cli()
@@ -160,13 +187,20 @@ class EvidenceCommand(unittest.TestCase):
 
     def test_given_values_are_written_and_count(self):
         body = self.post(["--model", "claude-fable-5-2", "--effort", "medium"])
-        self.assertIn("model=claude-fable-5-2 effort=medium -->", body)
+        self.assertIn(f"model=claude-fable-5-2 effort=medium files={rules.files_hash(FILES)} -->", body)
         self.assertEqual(body.splitlines()[1], "### QA evidence: pass, by `claude-fable-5-2` at effort `medium`")
         self.assertTrue(self.counts(body))
 
+    def test_the_marker_carries_the_content_and_counts_after_a_merge_of_main(self):
+        body = self.post(["--model", "m", "--effort", "e"])
+        found = rules.find_evidence([{"author": "owner", "body": body}], OTHER, "owner", rules.files_hash(FILES))
+        self.assertEqual(found, {"qa": "pass"})
+        moved = rules.files_hash([dict(FILES[0], sha="9" * 40)])
+        self.assertEqual(rules.find_evidence([{"author": "owner", "body": body}], OTHER, "owner", moved), {})
+
     def test_values_are_read_from_routes_record(self):
         body = self.post(["--route-run", "RUN1"], {"state": "ok", "model": "gpt-6.2-sol", "effort": "xhigh"})
-        self.assertIn("model=gpt-6.2-sol effort=xhigh -->", body)
+        self.assertIn("model=gpt-6.2-sol effort=xhigh files=", body)
         self.assertEqual(body.splitlines()[1], "### QA evidence: pass, by `gpt-6.2-sol` at effort `xhigh`")
         self.assertIn("read from route's record of that run", body)
         self.assertIn("`project-1/RUN1` in route's runs folder", body)
@@ -210,15 +244,18 @@ class EvidenceCommand(unittest.TestCase):
 
     def test_unknown_is_said_plainly(self):
         body = self.post(["--model", "claude-fable-5-2", "--effort", "unknown"])
-        self.assertIn("effort=unknown -->", body)
+        self.assertIn("effort=unknown files=", body)
         self.assertTrue(self.counts(body))
 
 
 class Protected(unittest.TestCase):
-    def test_pipeline_files_need_the_owner(self):
-        self.assertFalse(rules.check_protected([".github/pipeline/gate.py"], False)[0])
-        self.assertTrue(rules.check_protected([".github/pipeline/gate.py"], True)[0])
-        self.assertTrue(rules.check_protected(["demo/SKILL.md", "README.md"], False)[0])
+    def test_pipeline_files_pass_without_a_label(self):
+        ok, text = rules.check_protected([".github/pipeline/gate.py"])
+        self.assertTrue(ok)
+        self.assertIn("same review as any other change", text)
+        self.assertTrue(rules.check_protected(["demo/SKILL.md", "README.md"])[0])
+        # they still need evidence: a pipeline change counts as a change that needs a review
+        self.assertFalse(rules.check_evidence({}, bool(rules.protected_files([".github/pipeline/gate.py"])))[0])
 
 
 class Undo(unittest.TestCase):
@@ -240,6 +277,7 @@ class Undo(unittest.TestCase):
 CFG = {"skills_dir": "C:/Users/x/.claude/skills", "worktrees": "C:/Claude/.worktrees",
        "repos": [{"slug": "me/skills", "path": "C:/Claude/skills"}, {"slug": "me/skills-private", "path": "C:/Claude/skills-private"}]}
 TREE = "C:/Claude/.worktrees/skills/issue-3"
+LIVE = CFG["repos"][0]["path"]
 
 
 class Guard(unittest.TestCase):
@@ -247,12 +285,11 @@ class Guard(unittest.TestCase):
         return git_guard.decide({"tool_name": tool, "tool_input": {"command": command}, "cwd": cwd}, CFG)
 
     def test_blocked_in_a_worktree(self):
-        for c in ("git push --force", "git push -f origin issue-3", "git push origin main", "git push origin HEAD:main",
-                  "git push origin HEAD:refs/heads/main", "git commit --no-verify -m x", "git config core.hooksPath /tmp",
-                  "git tag demo--v9.9.9", "git push --tags", "gh release create demo--v1", "gh pr merge 3 --squash",
-                  "gh pr merge 3 --admin", "gh api -X PUT repos/me/skills/branches/main/protection",
-                  "gh api repos/me/skills/statuses/abc -f state=success", "gh pr edit 3 --add-label owner-approved",
-                  "gh secret set X", "gh repo edit --visibility public", "git remote set-url origin x"):
+        for c in ("git push --force", "git push -f origin issue-3", "git push origin +issue-3",
+                  "git commit --no-verify -m x", "git config core.hooksPath /tmp", "git -c core.hooksPath=/tmp commit -m x",
+                  "git config --unset core.hooksPath", "gh pr merge 3 --squash", "gh pr merge 3 --admin",
+                  "gh api repos/me/skills/statuses/abc -f state=success", "gh api repos/me/skills/pulls/3/merge -X PUT",
+                  "gh repo delete me/skills --yes", "gh repo rename other", "gh repo archive"):
             self.assertIsNotNone(self.deny(c), c)
 
     def test_allowed_in_a_worktree(self):
@@ -261,6 +298,36 @@ class Guard(unittest.TestCase):
                   "gh pr create --title 'fix: x' --body y", "gh pr view 3", "gh api repos/me/skills/pulls/3",
                   "python C:/Claude/skills/.github/pipeline/merge.py --repo me/skills --pr 3", "git rebase origin/main"):
             self.assertIsNone(self.deny(c), c)
+
+    def test_left_to_the_hooks_and_branch_protection(self):
+        """The pre-push hook holds main and tags, branch protection holds main on GitHub: the guard does not repeat them."""
+        for c in ("git push origin main", "git push origin HEAD:refs/heads/main", "git tag demo--v9.9.9", "git push --tags",
+                  "gh release create demo--v1", "git remote set-url origin x", "git branch -m main old",
+                  "gh secret set X", "gh repo edit --visibility public", "gh workflow disable gate"):
+            self.assertIsNone(self.deny(c), c)
+
+    def test_reading_the_hooks_path_is_fine(self):
+        for c in ("git config core.hooksPath", "git config --get core.hooksPath", "git config core.hooksPath || echo none"):
+            self.assertIsNone(self.deny(c), c)
+
+    def test_each_call_is_judged_by_where_it_acts(self):
+        # a push in another repo, in a command that also names the live clone and a pipeline repo
+        self.assertIsNone(self.deny(f"ls {LIVE}/.github && git -C C:/some/other/repo push origin main",
+                                    cwd="C:/elsewhere"))
+        self.assertIsNone(self.deny("git -C C:/some/other/repo push --force origin main", cwd=TREE))
+        self.assertIsNone(self.deny("cd C:/some/other/repo && git push -f origin main # see me/skills", cwd="C:/elsewhere"))
+        # an issue whose text quotes the blocked commands
+        self.assertIsNone(self.deny("gh issue create --repo me/skills --title x "
+                                    "--body \"run git push --force origin main, then gh pr merge 3\""))
+        self.assertIsNone(self.deny("gh issue create -R me/skills --title x --body 'git commit --no-verify -m x'",
+                                    cwd="C:/elsewhere"))
+        self.assertIsNone(self.deny("gh pr merge 3 -R someone/else", cwd=TREE))
+        # the same moves aimed at a pipeline repo are still blocked
+        self.assertIsNotNone(self.deny("git push --force origin issue-3", cwd=TREE))
+        self.assertIsNotNone(self.deny(f"git -C {TREE} push --force", cwd="C:/elsewhere"))
+        self.assertIsNotNone(self.deny(f"echo ok; cd {TREE} && git push -f", cwd="C:/elsewhere"))
+        self.assertIsNotNone(self.deny("gh pr merge 3 --repo me/skills", cwd="C:/elsewhere"))
+        self.assertIsNotNone(self.deny("gh api repos/me/skills/statuses/abc -f state=success", cwd="C:/elsewhere"))
 
     def test_live_clone_is_read_only(self):
         for c in ("git commit -m x", "git checkout -b work", "git reset --hard HEAD~1", "git stash", "git add ."):
@@ -282,7 +349,6 @@ class Guard(unittest.TestCase):
         self.assertIsNone(self.deny("gh api repos/me/skills/commits/abc/statuses --jq '.[].state'"))
         self.assertIsNone(self.deny("gh api repos/me/skills/branches/main/protection"))
         self.assertIsNotNone(self.deny("gh api repos/me/skills/statuses/abc -f state=success -f context=pipeline/title"))
-        self.assertIsNotNone(self.deny("gh api -X DELETE repos/me/skills/branches/main/protection"))
         self.assertIsNotNone(self.deny("gh api repos/me/skills/pulls/3/merge -X PUT"))
 
     def test_live_paths_are_not_prefixes(self):

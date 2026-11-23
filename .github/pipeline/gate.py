@@ -4,7 +4,8 @@
     python gate.py local --base origin/main --head HEAD      the pre-push hook runs this
 
 It never runs code from the PR: it reads titles, file lists and file contents through the API. The statuses
-belong to one exact commit, so a new commit starts with none and the evidence has to be given again.
+belong to one exact commit, so a new commit starts with none. Evidence still counts at a new commit when the PR's
+changed files are the same (a merge of main that leaves them alone); a change to one of them voids it.
 """
 import argparse
 
@@ -65,20 +66,15 @@ def evaluate_pr(repo: str, number: int) -> tuple[str, dict]:
                      lambda p: api(f"repos/{repo}/contents/{p}?ref={base}", raw=True),
                      lambda p: api(f"repos/{repo}/contents/{p}?ref={head}", raw=True))
 
-    labelled = [e for e in paged(f"repos/{repo}/issues/{number}/events")
-                if e["event"] in ("labeled", "unlabeled") and e["label"]["name"] == rules.OWNER_LABEL]
-    approved = bool(labelled) and labelled[-1]["event"] == "labeled" \
-        and labelled[-1]["actor"]["login"].lower() == owner.lower()
-
     comments = [{"author": c["user"]["login"], "body": c["body"]}
                 for c in paged(f"repos/{repo}/issues/{number}/comments")]
     needed = bool(skills) or bool(rules.protected_files(paths))
+    found = rules.find_evidence(comments, head, owner, rules.files_hash(files))
     return head, {
         "pipeline/title": rules.check_title(title),
         "pipeline/version": rules.check_version(title, skills),
-        "pipeline/evidence": rules.check_evidence(rules.find_evidence(comments, head, owner), needed,
-                                                  _undo_of(repo, title, head, skills)),
-        "pipeline/protected-files": rules.check_protected(paths, approved),
+        "pipeline/evidence": rules.check_evidence(found, needed, _undo_of(repo, title, head, skills)),
+        "pipeline/protected-files": rules.check_protected(paths),
     }
 
 

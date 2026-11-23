@@ -138,8 +138,9 @@ def check_protected(paths: list[str]) -> tuple[bool, str]:
 def files_hash(files: list[dict]) -> str:
     """One id for a PR's content: its changed files (GitHub's pulls/N/files entries) with their blob ids at the
     head commit. A merge of main that leaves these files alone keeps the id; any change to one of them does not."""
-    lines = sorted(f"{f['filename']} {'-' if f.get('status') == 'removed' else f.get('sha')}" for f in files)
-    lines += sorted(f"{f['previous_filename']} -" for f in files if f.get("previous_filename"))
+    lines = [f"{f['filename']} {'-' if f.get('status') == 'removed' else f.get('sha')}" for f in files]
+    lines += [f"{f['previous_filename']} -" for f in files if f.get("previous_filename")]
+    lines = sorted(set(lines))      # one sort by file name over all rows: a rename as one row or two is the same
     return hashlib.sha256("\n".join(lines).encode("utf-8")).hexdigest()
 
 

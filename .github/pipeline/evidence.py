@@ -67,6 +67,7 @@ def cli() -> int:
     ap.add_argument("--route-run", help="the id of the route run that produced the report; model and effort are read from it")
     ap.add_argument("--model", help="the exact model id the checker ran on, or 'unknown'")
     ap.add_argument("--effort", help="the reasoning effort the checker ran at, or 'unknown'")
+    ap.add_argument("--commit", help="the full id of the commit the checker looked at; refused if the PR's files moved since")
     a = ap.parse_args()
 
     report = Path(a.file).read_text(encoding="utf-8").strip()
@@ -88,6 +89,8 @@ def cli() -> int:
     if not re.fullmatch(rules.EFFORT, effort):
         raise Failed(f"'{effort}' is not an effort level (letters, digits, . _ -)")
 
+    if a.commit and not re.fullmatch(r"[0-9a-f]{40}", a.commit):
+        raise Failed(f"'{a.commit}' is not a full commit id (40 hex digits)")
     pr = api(f"repos/{a.repo}/pulls/{a.pr}")
     if pr is None:
         raise Failed(f"{a.repo} has no pull request {a.pr}")
@@ -95,6 +98,13 @@ def cli() -> int:
     content = rules.files_hash(paged(f"repos/{a.repo}/pulls/{a.pr}/files"))
     if (api(f"repos/{a.repo}/pulls/{a.pr}") or {}).get("head", {}).get("sha") != sha:
         raise Failed("The pull request moved while its files were read; give the evidence again")
+    if a.commit and a.commit != sha:
+        # the reviewer looked at an older commit: it counts only if the PR's files are the same there
+        at = api(f"repos/{a.repo}/compare/{pr['base']['ref']}...{a.commit}") or {}
+        if rules.files_hash(at.get("files") or []) != content:
+            raise Failed(f"The pull request moved: its files at {sha[:10]} differ from the reviewed commit "
+                         f"{a.commit[:10]}. Review the new commit and give the evidence again")
+        sha = a.commit
     title = {"review": "Review", "qa": "QA"}[a.kind]
     body = (f"<!-- pipeline-evidence kind={a.kind} sha={sha} result={a.result} model={model} effort={effort} "
             f"files={content} -->\n"

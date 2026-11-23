@@ -13,6 +13,7 @@ protection where the plan allows it, and the local git hooks.
 """
 import json
 import os
+import posixpath
 import re
 import sys
 from pathlib import Path
@@ -28,17 +29,19 @@ REMOVE = re.compile(r"\b(rm|rmdir|rd|del|erase|remove-item|ri|move-item|mv|move|
 
 GH = re.compile(r"\bgh(?:\.exe)?\s+(?P<sub>[a-z]+)")
 GH_REPO = re.compile(r"""(?<!\S)(?:--repo|-R)(?:\s+|=)("[^"]*"|'[^']*'|\S+)""")
-GH_REPO_ARG = re.compile(r"^gh(?:\.exe)?\s+repo\s+[a-z]+\s+([\w.-]+/[\w.-]+)|\brepos/([\w.-]+/[\w.-]+)")
-QUOTED = re.compile(r""""[^"]*"|'[^']*'""")
+GH_REPO_ARG = re.compile(r"^gh(?:\.exe)?\s+repo\s+[a-z]+\s+([\w.-]+/[\w.-]+)|\brepos/([\w.-]+/[\w.-]+)"
+                         r"|\bgithub\.com/([\w.-]+/[\w.-]+)")
+QUOTED = re.compile(r""""[^"]*"|'[^']*'""")      # blanked when it holds a space: text, not a path or refspec
 CALL_END = re.compile(r"[\n;&|]")
 WRITE = r"(?=.*(\s-x\s*(post|put|patch|delete)|\s--method\b|\s-f\b|\s--field\b|\s--raw-field\b|\s--input\b))"
 
-# Each rule is judged against one git or gh call (lower-cased, quoted text blanked) that acts on a pipeline repo.
+# Each rule is judged against one git or gh call (lower-cased, quoted text with a space blanked) that acts on a pipeline repo.
 # Main, tags and releases are held by the pre-push hook and by branch protection, so they are not repeated here.
 GIT_RULES = [
-    (r"\bpush\b.*(\s--force(?!-with-lease)|\s-f\b|\s\+\S)",
+    (r"\bpush\b.*(\s--force(?!-with-lease)|\s-f\b|\s[\"']?\+\S)",
      "Force pushes are blocked. Use --force-with-lease on your own PR branch if you rebased it."),
-    (r"(?<!\S)--no-verify\b|\bcore\.hookspath(=|\s+[^\s-])|--unset(-all)?\s+core\.hookspath\b",
+    (r"(?<!\S)--no-verify\b|\bcore\.hookspath(=|\s+[^\s-])"
+     r"|(--unset(-all)?|(?<!\S)unset(\s+--all)?)\s+core\.hookspath\b",
      "The local git hooks may not be skipped or re-pointed."),
 ]
 GH_RULES = [
@@ -85,7 +88,16 @@ def decide(payload: dict, cfg: dict) -> str | None:
     raw = (args.get("command") or "").replace("\\", "/")      # case kept: git -C is not git -c
     command = norm(raw)
     # quoted text (an issue body, a commit message) is blanked, so only the calls that run are judged
-    masked = QUOTED.sub(lambda q: q.group(0)[0] + "_" * (len(q.group(0)) - 2) + q.group(0)[-1], raw)
+    # a quoted single word (a path, a refspec, an endpoint, a URL) stays readable
+    masked = QUOTED.sub(lambda q: q.group(0) if not re.search(r"\s", q.group(0)) else
+                        q.group(0)[0] + "_" * (len(q.group(0)) - 2) + q.group(0)[-1], raw)
+
+    def resolve(path: str, base: str) -> str:
+        """A -C folder as an absolute path: a relative one is taken from the folder the call runs in."""
+        p = norm(path)
+        if not re.match(r"[a-z]:/|/|~", p):
+            p = norm(base).rstrip("/") + "/" + p
+        return posixpath.normpath(p)
 
     def call(start: int) -> str:
         end = CALL_END.search(masked, start)
@@ -103,7 +115,7 @@ def decide(payload: dict, cfg: dict) -> str | None:
         target = DASH_C.search(m.group("opts"))
         if target:
             pos = m.start("opts") + target.start(1)
-            where = raw[pos:m.start("opts") + target.end(1)].strip("\"'")
+            where = resolve(raw[pos:m.start("opts") + target.end(1)].strip("\"'"), folder(m.start()))
         else:
             where = folder(m.start())
         if not pipeline(where):
@@ -124,15 +136,16 @@ def decide(payload: dict, cfg: dict) -> str | None:
         if named:
             repo = raw[m.start() + named.start(1):m.start() + named.end(1)].strip("\"'")
         else:
-            repo = arg and (arg.group(1) or arg.group(2))
+            repo = arg and next(g for g in arg.groups() if g)
         if not (repo.lower() in slugs if repo else pipeline(folder(m.start()))):
             continue
         for pattern, reason in GH_RULES:
             if re.search(pattern, norm(text)):
                 return reason
-    if REMOVE.search(command) and any(re.search(re.escape(norm(x).rstrip("/")) + r"(/[\w.-]+)?[\"']?(\s|$)", command)
-                                      for x in live + linked):
-        return "Deleting or moving a live skill folder or its link is the owner's call."
+    for r in REMOVE.finditer(norm(masked)):         # per call, like the rules above
+        span = command[r.start():r.start() + len(call(r.start()))]
+        if any(re.search(re.escape(norm(x).rstrip("/")) + r"(/[\w.-]+)?[\"']?(\s|$)", span) for x in live + linked):
+            return "Deleting or moving a live skill folder or its link is the owner's call."
     return None
 
 

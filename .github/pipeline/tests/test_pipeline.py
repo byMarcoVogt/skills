@@ -101,6 +101,12 @@ class Evidence(unittest.TestCase):
         # a marker without a hash counts only for its own commit
         self.assertEqual(rules.find_evidence([ev("review")], OTHER, "owner", same), {})
         self.assertEqual(rules.find_evidence([ev("review")], SHA, "owner", same), {"review": "pass"})
+        # a rename as one row or as two rows, in any order, is the same content
+        one = [{"filename": "demo/b.md", "status": "renamed", "sha": "5" * 40, "previous_filename": "demo/a.md"}]
+        two = [{"filename": "demo/b.md", "status": "added", "sha": "5" * 40},
+               {"filename": "demo/a.md", "status": "removed", "sha": "6" * 40}]
+        self.assertEqual(rules.files_hash(one), rules.files_hash(two))
+        self.assertEqual(rules.files_hash(two), rules.files_hash(list(reversed(two))))
         # with a hash, its own commit still counts even when the files moved on
         self.assertEqual(rules.find_evidence([hashed("review")], SHA, "owner", changed), {"review": "pass"})
 
@@ -147,7 +153,7 @@ class Evidence(unittest.TestCase):
 
 class EvidenceCommand(unittest.TestCase):
     """evidence.py writes the marker the gate reads; model and effort come from the source that knows them."""
-    def post(self, argv, record=None, answer="looked\r\nat  it"):
+    def post(self, argv, record=None, answer="looked\r\nat  it", reviewed=None):
         import json
         import tempfile
         import evidence
@@ -168,7 +174,9 @@ class EvidenceCommand(unittest.TestCase):
             if method == "POST":
                 posted.append(fields["body"])
                 return {"html_url": "url"}
-            return {"head": {"sha": SHA}}
+            if "/compare/" in path:
+                return {"files": reviewed if reviewed is not None else FILES}
+            return {"head": {"sha": SHA}, "base": {"ref": "main"}}
 
         args = ["evidence.py", "--repo", "o/r", "--pr", "1", "--kind", "qa", "--result", "pass",
                 "--file", str(folder / "report.md")] + argv
@@ -197,6 +205,16 @@ class EvidenceCommand(unittest.TestCase):
         self.assertEqual(found, {"qa": "pass"})
         moved = rules.files_hash([dict(FILES[0], sha="9" * 40)])
         self.assertEqual(rules.find_evidence([{"author": "owner", "body": body}], OTHER, "owner", moved), {})
+
+    def test_the_reviewed_commit_must_have_the_same_content(self):
+        body = self.post(["--model", "m", "--effort", "e", "--commit", OTHER])
+        self.assertIn(f"sha={OTHER} ", body)
+        self.assertIn(f"files={rules.files_hash(FILES)}", body)
+        moved = self.post(["--model", "m", "--effort", "e", "--commit", OTHER], reviewed=[dict(FILES[0], sha="9" * 40)])
+        self.assertIsInstance(moved, Exception)
+        self.assertIn("moved", str(moved))
+        self.assertIn(f"sha={SHA} ", self.post(["--model", "m", "--effort", "e", "--commit", SHA]))
+        self.assertIsInstance(self.post(["--model", "m", "--effort", "e", "--commit", "abc"]), Exception)
 
     def test_values_are_read_from_routes_record(self):
         body = self.post(["--route-run", "RUN1"], {"state": "ok", "model": "gpt-6.2-sol", "effort": "xhigh"})
@@ -328,6 +346,27 @@ class Guard(unittest.TestCase):
         self.assertIsNotNone(self.deny(f"echo ok; cd {TREE} && git push -f", cwd="C:/elsewhere"))
         self.assertIsNotNone(self.deny("gh pr merge 3 --repo me/skills", cwd="C:/elsewhere"))
         self.assertIsNotNone(self.deny("gh api repos/me/skills/statuses/abc -f state=success", cwd="C:/elsewhere"))
+
+    def test_the_target_is_read_from_relative_paths_urls_and_quoted_endpoints(self):
+        self.assertIsNotNone(self.deny("git -C ../issue-3 push --force", cwd=TREE + "/../other"))
+        self.assertIsNotNone(self.deny("git -C sub push --force", cwd=TREE))
+        self.assertIsNone(self.deny("git -C ../../../some/other push --force", cwd=TREE))
+        self.assertIsNotNone(self.deny("gh pr merge https://github.com/me/skills/pull/3", cwd="C:/elsewhere"))
+        self.assertIsNone(self.deny("gh pr merge https://github.com/someone/else/pull/3", cwd=TREE))
+        self.assertIsNotNone(self.deny('gh api -X POST "repos/me/skills/statuses/abc" -f state=success', cwd="C:/elsewhere"))
+
+    def test_a_quoted_force_refspec_is_a_force_push(self):
+        for c in ('git push origin "+main"', "git push origin '+issue-3'"):
+            self.assertIsNotNone(self.deny(c), c)
+
+    def test_the_newer_unset_form_is_a_write(self):
+        self.assertIsNotNone(self.deny("git config unset core.hooksPath"))
+        self.assertIsNotNone(self.deny("git config unset --all core.hooksPath"))
+
+    def test_removal_is_judged_per_call(self):
+        self.assertIsNone(self.deny(f"ls {LIVE} && gh issue create --repo me/skills --title x "
+                                    "--body \"move the folder, then rm the copy\"", cwd="C:/elsewhere"))
+        self.assertIsNotNone(self.deny(f"ls C:/x && rm -rf \"{LIVE}/demo\"", cwd="C:/elsewhere"))
 
     def test_live_clone_is_read_only(self):
         for c in ("git commit -m x", "git checkout -b work", "git reset --hard HEAD~1", "git stash", "git add ."):

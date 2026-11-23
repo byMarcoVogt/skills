@@ -1,0 +1,85 @@
+<!-- @dsCard group="Slides" height=1080 width=1920 subtitle="Scatter in the house frame: unit cost against utilisation for 12 plants (illustrative)" -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400..700&family=Inter:wght@400..700&display=swap">
+<style>
+  :root { --font-serif: 'Newsreader', Georgia, serif; --font-sans: 'Inter', Arial, sans-serif; }
+  .s { position: relative; width: 1920px; height: 1080px; box-sizing: border-box; padding: 72px 80px 124px; background: var(--surface); color: var(--ink); font-family: var(--font-sans); display: flex; flex-direction: column; gap: 24px; overflow: hidden; }
+  .s :where(p, h2) { margin: 0; }
+  .sticker { position: absolute; right: 80px; top: 16px; font-size: 24px; line-height: 30px; font-weight: 700; color: var(--navy-700); border: 2px solid var(--navy-700); border-radius: var(--radius-stamp); padding: 4px 16px; }
+  .title { max-width: 1672px; font-family: var(--font-serif); font-size: 52px; line-height: 60px; font-weight: 500; color: var(--navy-700); font-variant-numeric: lining-nums; }
+  .rule { flex: none; height: 3px; background: var(--navy-700); }
+  .body { display: flex; flex-direction: column; }
+  .ct { font-size: 28px; line-height: 34px; font-weight: 700; color: var(--navy-700); }
+  .legend { display: flex; gap: 40px; align-items: center; height: 32px; margin-top: 12px; }
+  .legend div { display: flex; gap: 12px; align-items: center; font-size: 24px; line-height: 30px; color: var(--muted); }
+  .plot { position: relative; margin-top: 24px; }
+  .plot svg { position: absolute; left: 0; top: 0; overflow: visible; }
+  .dl { position: absolute; width: 120px; margin-left: -60px; text-align: center; font-size: 26px; line-height: 30px; font-weight: 700; color: var(--navy-700); font-variant-numeric: lining-nums; }
+  .ax { position: relative; height: 30px; margin-top: 12px; }
+  .ax p { position: absolute; top: 0; width: 200px; margin-left: -100px; text-align: center; font-size: 24px; line-height: 30px; color: var(--muted); }
+  .note { position: absolute; width: max-content; font-size: 24px; line-height: 32px; color: var(--ink); border-bottom: 2px solid var(--muted); }
+  .lead { position: absolute; width: 2px; background: var(--muted); }
+  .dot { position: absolute; width: 14px; height: 14px; border-radius: 50%; background: var(--muted); }
+  .sowhat { margin-top: 24px; font-size: 24px; line-height: 32px; border-top: 2px solid var(--slate-300); padding-top: 24px; }
+  .sowhat b { color: var(--navy-700); }
+  .frule { position: absolute; left: 80px; right: 80px; bottom: 98px; height: 3px; background: var(--navy-700); }
+  .src { position: absolute; left: 80px; bottom: 52px; width: 1300px; font-size: 24px; line-height: 30px; color: var(--muted); }
+  .pg { position: absolute; right: 80px; bottom: 52px; width: 400px; text-align: right; font-size: 24px; line-height: 30px; font-weight: 700; color: var(--navy-700); }
+  .pg span { color: var(--slate-300); }
+  .yt { margin-top: 24px; font-size: 24px; line-height: 34px; font-weight: 700; color: var(--muted); }
+  .yt + .plot { margin-top: 12px; }
+  .xt { margin-top: 12px; text-align: center; font-size: 24px; line-height: 30px; font-weight: 700; color: var(--muted); }
+</style>
+<div class="s">
+  <p class="sticker">Illustrative</p>
+  <h2 class="title">Our three plants below 70% utilisation have the highest unit costs in the network</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <p class="ct">Unit cost against capacity utilisation, 12 plants, 2025</p>
+    <div class="legend">
+      <div><svg width="20" height="20" viewBox="0 0 20 20" aria-label="Navy dot"><circle cx="10" cy="10" r="10" fill="#24406a"/></svg>Plants below 70% utilisation</div>
+      <div><svg width="20" height="20" viewBox="0 0 20 20" aria-label="Grey dot"><circle cx="10" cy="10" r="10" fill="#a9b4bf"/></svg>Other plants</div>
+      <div><svg width="40" height="20" viewBox="0 0 40 20" aria-label="Dashed line"><line x1="0" y1="10" x2="40" y2="10" stroke="#7d8a97" stroke-width="3" stroke-dasharray="8 5"/></svg>Ø unit cost, all plants</div>
+    </div>
+    <p class="yt">Unit cost, in € per unit</p>
+    <div class="plot" style="width:1760px;height:399px">
+      <svg width="1760" height="399" viewBox="0 0 1760 399" aria-label="Unit cost against utilisation for twelve plants">
+        <line x1="70" y1="262.7" x2="1600" y2="262.7" stroke="#d0d0d0" stroke-width="1"/><line x1="70" y1="136.3" x2="1600" y2="136.3" stroke="#d0d0d0" stroke-width="1"/><line x1="70" y1="10.0" x2="1600" y2="10.0" stroke="#d0d0d0" stroke-width="1"/>
+        <line x1="70" y1="398" x2="1600" y2="398" stroke="#d0d0d0" stroke-width="2"/>
+        <line x1="70" y1="212.1" x2="1600" y2="212.1" stroke="#7d8a97" stroke-width="3" stroke-dasharray="12 8"/>
+        <circle cx="743.2" cy="186.9" r="10" fill="#a9b4bf"/>
+        <circle cx="835.0" cy="224.8" r="10" fill="#a9b4bf"/>
+        <circle cx="926.8" cy="199.5" r="10" fill="#a9b4bf"/>
+        <circle cx="1018.6" cy="250.0" r="10" fill="#a9b4bf"/>
+        <circle cx="1110.4" cy="275.3" r="10" fill="#a9b4bf"/>
+        <circle cx="1171.6" cy="237.4" r="10" fill="#a9b4bf"/>
+        <circle cx="1263.4" cy="287.9" r="10" fill="#a9b4bf"/>
+        <circle cx="1355.2" cy="313.2" r="10" fill="#a9b4bf"/>
+        <circle cx="1447.0" cy="300.6" r="10" fill="#a9b4bf"/>
+        <circle cx="314.8" cy="60.5" r="10" fill="#24406a"/>
+        <circle cx="467.8" cy="111.1" r="10" fill="#24406a"/>
+        <circle cx="559.6" cy="85.8" r="10" fill="#24406a"/>
+      </svg>
+      <p style="position:absolute;left:336.8px;top:45.5px;font-size:24px;line-height:30px;font-weight:700;color:var(--navy-700)">Brno</p>
+      <p style="position:absolute;left:489.8px;top:96.1px;font-size:24px;line-height:30px;font-weight:700;color:var(--navy-700)">Porto</p>
+      <p style="position:absolute;left:581.6px;top:70.8px;font-size:24px;line-height:30px;font-weight:700;color:var(--navy-700)">Lyon</p>
+      <p style="position:absolute;left:1616px;top:197.1px;font-size:24px;line-height:30px;font-weight:700;color:var(--slate-500)">Ø 4.4</p>
+      <p style="position:absolute;left:0;top:384.0px;width:56px;text-align:right;font-size:24px;line-height:30px;color:var(--muted)">3.0</p>
+      <p style="position:absolute;left:0;top:247.7px;width:56px;text-align:right;font-size:24px;line-height:30px;color:var(--muted)">4.0</p>
+      <p style="position:absolute;left:0;top:121.3px;width:56px;text-align:right;font-size:24px;line-height:30px;color:var(--muted)">5.0</p>
+      <p style="position:absolute;left:0;top:-5.0px;width:56px;text-align:right;font-size:24px;line-height:30px;color:var(--muted)">6.0</p>
+    </div>
+    <div class="ax" style="width:1760px">
+      <p style="left:70.0px">50</p>
+      <p style="left:376.0px">60</p>
+      <p style="left:682.0px">70</p>
+      <p style="left:988.0px">80</p>
+      <p style="left:1294.0px">90</p>
+      <p style="left:1600.0px">100</p>
+    </div>
+    <p class="xt" style="width:1530px;margin-left:70px">Capacity utilisation, in %</p>
+    <p class="sowhat"><b>So what:</b> moving volume out of Brno, Porto and Lyon is the main lever on unit cost, ahead of purchasing.</p>
+  </div>
+  <div class="frule"></div>
+  <p class="src">Source: plant controlling, full-year 2025 (illustrative values)</p>
+  <p class="pg">Network review<span>&#160;&#160;|&#160;&#160;</span>5</p>
+</div>

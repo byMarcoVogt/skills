@@ -1,0 +1,108 @@
+/* Marco Vogt Slides — generated from tokens.json */
+:root, [data-theme="light"] {
+  --navy-700: #24406a; /* The house colour: action titles, title and footer rules, message bars, stamps, big numbers, callout band. 10:1 on surface. */
+  --navy-500: #5d7a99; /* Second data series and cover separators. Differs from navy-700 in lightness. 4.6:1 on surface. */
+  --navy-600: #2b4b78; /* Cover gradient, light end. */
+  --navy-900: #18304f; /* Cover gradient, dark end. */
+  --slate-300: #a9b4bf; /* Context data (a prior-period bar), so-what rule, separators in the footer label. Never for text on white. */
+  --slate-500: #7d8a97; /* Benchmark lines (Ø) and the average symbol. */
+  --ink: #222222; /* Body text on surface and panel. 16:1. */
+  --muted: #666666; /* Units, axis labels, legends, sources, annotation leaders. 5.7:1 on surface. */
+  --hairline: #d0d0d0; /* Chart baselines and card dividers. Lines, never fills. */
+  --divider: #e3e6ea; /* Dividers between rows inside a grey panel. */
+  --panel: #f2f4f6; /* Grey panels and cards. Ink keeps 14:1 on it. */
+  --surface: #ffffff; /* Slide background. Content slides are always white. */
+}
+:root {
+  --space-2: 12px; /* Label to bar, icon to its text. */
+  --space-4: 24px; /* Between title, rule and body; between points. */
+  --space-6: 40px; /* Panel padding. */
+  --space-8: 64px; /* Gutter between chart and panel. */
+  --margin-side: 80px; /* Left and right slide margin. */
+  --margin-top: 72px; /* Top margin above the action title. */
+  --margin-bottom: 124px; /* Bottom zone that holds the footer rule, source and page label. */
+  --radius-stamp: 4px; /* The slide sticker only. */
+  --radius-full: 999px; /* Icon circles, annotation dots, status circles. */
+  --font-serif: Georgia, "Times New Roman", serif;
+  --font-sans: Arial, Helvetica, sans-serif;
+  --text-cover-title: 400 104px/110px var(--font-serif); /* Deck title on the cover, white on navy. A statement, not a topic. */
+  --text-action-title: 400 52px/60px var(--font-serif); /* One per content slide, navy-700, one sentence, two lines at most. */
+  --text-big-number: 400 52px/56px var(--font-serif); /* A key figure or delta set on or beside the chart, navy-700. */
+  --text-chart-title: 700 28px/34px var(--font-sans); /* What the chart measures, with its unit after a comma. navy-700. */
+  --text-callout: 700 28px/36px var(--font-sans); /* The one sentence in a navy callout band, white, centred. */
+  --text-body: 400 24px/32px var(--font-sans); /* Body text, annotations, card text. ink. */
+  --text-body-strong: 700 24px/32px var(--font-sans); /* Bold lead-in that opens a point, and the 'So what:' label. */
+  --text-data-label: 700 26px/30px var(--font-sans); /* Values on or above bars; replaces the y-axis. */
+  --text-stamp: 700 24px/30px var(--font-sans); /* Slide sticker top right, navy-700 in a navy outline. */
+  --text-footnote: 400 24px/30px var(--font-sans); /* Sources, legends, axis labels. muted. */
+}
+.cover-title {
+  font-family: var(--font-serif);
+  font-size: 104px;
+  line-height: 110px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.action-title {
+  font-family: var(--font-serif);
+  font-size: 52px;
+  line-height: 60px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.big-number {
+  font-family: var(--font-serif);
+  font-size: 52px;
+  line-height: 56px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.chart-title {
+  font-family: var(--font-sans);
+  font-size: 28px;
+  line-height: 34px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.callout {
+  font-family: var(--font-sans);
+  font-size: 28px;
+  line-height: 36px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.body {
+  font-family: var(--font-sans);
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.body-strong {
+  font-family: var(--font-sans);
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.data-label {
+  font-family: var(--font-sans);
+  font-size: 26px;
+  line-height: 30px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.stamp {
+  font-family: var(--font-sans);
+  font-size: 24px;
+  line-height: 30px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.footnote {
+  font-family: var(--font-sans);
+  font-size: 24px;
+  line-height: 30px;
+  font-weight: 400;
+  letter-spacing: 0;
+}

@@ -1,0 +1,23 @@
+<!-- @dsCard height=288 -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400..700&family=Inter:wght@400..700&display=swap">
+<style>
+  :root { --font-serif: 'Newsreader', Georgia, serif; --font-sans: 'Inter', Arial, sans-serif; }
+  body { margin: 0; background: var(--surface); }
+  .cover { position: relative; width: 960px; height: 288px; background: var(--surface); overflow: hidden; }
+  .cover svg { position: absolute; inset: 0; }
+  .name { position: absolute; left: 48px; bottom: 64px; max-width: 440px; margin: 0; font-family: var(--font-serif); font-weight: 400; font-size: 64px; line-height: .95; color: var(--navy-700); }
+  .tag { position: absolute; left: 48px; bottom: 32px; max-width: 440px; margin: 0; font-family: var(--font-sans); font-size: 14px; line-height: 18px; color: var(--muted); }
+</style>
+<div class="cover">
+  <svg viewBox="0 0 960 288" width="960" height="288" aria-hidden="true">
+    <!-- the house chart motif: navy message bars, a slate context bar, a dashed projection, a dashed benchmark; navy and greys only -->
+    <rect x="520" y="40" width="64" height="200" fill="#a9b4bf"/>
+    <rect x="592" y="0" width="144" height="240" fill="#24406a"/>
+    <rect x="744" y="72" width="96" height="168" fill="#5d7a99"/>
+    <rect x="850" y="130" width="108" height="108" fill="#ffffff" stroke="#24406a" stroke-width="3" stroke-dasharray="8 6"/>
+    <line x1="496" y1="240.5" x2="960" y2="240.5" stroke="#d0d0d0" stroke-width="1"/>
+    <line x1="496" y1="104" x2="960" y2="104" stroke="#7d8a97" stroke-width="2" stroke-dasharray="6 5"/>
+  </svg>
+  <h1 class="name">Marco Vogt Slides</h1>
+  <p class="tag">One message per slide, in navy and grey.</p>
+</div>

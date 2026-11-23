@@ -7,6 +7,7 @@ Agent Skills I built for my own daily work with Claude Code and Codex. Each one 
 | [Think it through](think-it-through) | Turns an idea, a brain dump or a half-formed wish into one plan an agent can build from, asking one real decision at a time. |
 | [Close the gap](close-the-gap) `experimental` | Finds the most worthwhile gap between how you work with AI and the frontier. Then it teaches you about it, from the frontier back to your work. |
 | [Skill trials](skill-trials) | Runs one ablation or variant of a skill through a window of real work, then keeps it, rebuilds only what went missing, or retires the skill. |
+| [Slides](slides) | Builds a deck in Claude Slides in my design system, and measures every slide against it before I see it. |
 
 ## Design principles
 
@@ -37,7 +38,7 @@ npx skills add byMarcoVogt/skills
 npx skills add byMarcoVogt/skills --skill think-it-through -a claude-code -g -y
 ```
 
-For Codex, use `-a codex`. [`npx skills`](https://github.com/vercel-labs/skills) is Vercel's installer and needs Node.js 22.20 or newer. Skill trials needs Think it through.
+For Codex, use `-a codex`. [`npx skills`](https://github.com/vercel-labs/skills) is Vercel's installer and needs Node.js 22.20 or newer. Skill trials needs Think it through. Slides needs Python 3 and Playwright with Chromium for its check.
 
 Then start a new session. Ask in your own words and the agent picks the skill that fits (*"Grill me on this plan"* starts Think it through), or call one by name: `/think-it-through` in Claude Code, `$think-it-through` in Codex. [Close the gap](close-the-gap) starts only by name.
 

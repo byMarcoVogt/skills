@@ -1,0 +1,93 @@
+<!-- @dsCard group="Slides" height=1080 width=1920 subtitle="Stacked chart in the house frame: revenue by sales channel 2020 to 2025 (illustrative)" -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400..700&family=Inter:wght@400..700&display=swap">
+<style>
+  :root { --font-serif: 'Newsreader', Georgia, serif; --font-sans: 'Inter', Arial, sans-serif; }
+  .s { position: relative; width: 1920px; height: 1080px; box-sizing: border-box; padding: 72px 80px 124px; background: var(--surface); color: var(--ink); font-family: var(--font-sans); display: flex; flex-direction: column; gap: 24px; overflow: hidden; }
+  .s :where(p, h2) { margin: 0; }
+  .sticker { position: absolute; right: 80px; top: 16px; font-size: 24px; line-height: 30px; font-weight: 700; color: var(--navy-700); border: 2px solid var(--navy-700); border-radius: var(--radius-stamp); padding: 4px 16px; }
+  .title { max-width: 1672px; font-family: var(--font-serif); font-size: 52px; line-height: 60px; font-weight: 500; color: var(--navy-700); font-variant-numeric: lining-nums; }
+  .rule { flex: none; height: 3px; background: var(--navy-700); }
+  .body { display: flex; flex-direction: column; }
+  .ct { font-size: 28px; line-height: 34px; font-weight: 700; color: var(--navy-700); }
+  .legend { display: flex; gap: 40px; align-items: center; height: 32px; margin-top: 12px; }
+  .legend div { display: flex; gap: 12px; align-items: center; font-size: 24px; line-height: 30px; color: var(--muted); }
+  .plot { position: relative; margin-top: 24px; }
+  .plot svg { position: absolute; left: 0; top: 0; overflow: visible; }
+  .dl { position: absolute; width: 120px; margin-left: -60px; text-align: center; font-size: 26px; line-height: 30px; font-weight: 700; color: var(--navy-700); font-variant-numeric: lining-nums; }
+  .ax { position: relative; height: 30px; margin-top: 12px; }
+  .ax p { position: absolute; top: 0; width: 200px; margin-left: -100px; text-align: center; font-size: 24px; line-height: 30px; color: var(--muted); }
+  .note { position: absolute; width: max-content; font-size: 24px; line-height: 32px; color: var(--ink); border-bottom: 2px solid var(--muted); }
+  .lead { position: absolute; width: 2px; background: var(--muted); }
+  .dot { position: absolute; width: 14px; height: 14px; border-radius: 50%; background: var(--muted); }
+  .sowhat { margin-top: 24px; font-size: 24px; line-height: 32px; border-top: 2px solid var(--slate-300); padding-top: 24px; }
+  .sowhat b { color: var(--navy-700); }
+  .frule { position: absolute; left: 80px; right: 80px; bottom: 98px; height: 3px; background: var(--navy-700); }
+  .src { position: absolute; left: 80px; bottom: 52px; width: 1300px; font-size: 24px; line-height: 30px; color: var(--muted); }
+  .pg { position: absolute; right: 80px; bottom: 52px; width: 400px; text-align: right; font-size: 24px; line-height: 30px; font-weight: 700; color: var(--navy-700); }
+  .pg span { color: var(--slate-300); }
+</style>
+<div class="s">
+  <p class="sticker">Illustrative</p>
+  <h2 class="title">Since 2020, online sales have carried all of the retailer’s revenue growth</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <p class="ct">Revenue by sales channel, in €m</p>
+    <div class="plot" style="width:1760px;height:591px">
+      <svg width="1760" height="591" viewBox="0 0 1760 591" aria-label="Revenue by channel 2020 to 2025">
+        <rect x="45.0" y="506.8" width="150" height="84.2" fill="#24406a"/><rect x="45.0" y="254.2" width="150" height="252.6" fill="#5d7a99"/><rect x="45.0" y="191.0" width="150" height="63.2" fill="#a9b4bf"/><rect x="285.0" y="475.2" width="150" height="115.8" fill="#24406a"/><rect x="285.0" y="226.8" width="150" height="248.4" fill="#5d7a99"/><rect x="285.0" y="163.7" width="150" height="63.2" fill="#a9b4bf"/><rect x="525.0" y="443.6" width="150" height="147.4" fill="#24406a"/><rect x="525.0" y="201.6" width="150" height="242.1" fill="#5d7a99"/><rect x="525.0" y="136.3" width="150" height="65.3" fill="#a9b4bf"/><rect x="765.0" y="414.2" width="150" height="176.8" fill="#24406a"/><rect x="765.0" y="170.0" width="150" height="244.2" fill="#5d7a99"/><rect x="765.0" y="106.8" width="150" height="63.2" fill="#a9b4bf"/><rect x="1005.0" y="384.7" width="150" height="206.3" fill="#24406a"/><rect x="1005.0" y="144.7" width="150" height="240.0" fill="#5d7a99"/><rect x="1005.0" y="79.5" width="150" height="65.3" fill="#a9b4bf"/><rect x="1245.0" y="355.2" width="150" height="235.8" fill="#24406a"/><rect x="1245.0" y="113.2" width="150" height="242.1" fill="#5d7a99"/><rect x="1245.0" y="50.0" width="150" height="63.2" fill="#a9b4bf"/>
+        <line x1="0" y1="590" x2="1440" y2="590" stroke="#d0d0d0" stroke-width="2"/>
+      </svg>
+      <div style="position:absolute;left:0;top:0;width:1760px;height:591px">
+        <p class="dl" style="left:120.0px;top:533.9px;color:#ffffff">40</p>
+        <p class="dl" style="left:120.0px;top:365.5px;color:#ffffff">120</p>
+        <p class="dl" style="left:120.0px;top:207.6px;color:#24406a">30</p>
+        <p class="dl" style="left:120.0px;top:149.0px">190</p>
+      </div>
+      <div style="position:absolute;left:0;top:0;width:1760px;height:591px">
+        <p class="dl" style="left:360.0px;top:518.1px;color:#ffffff">55</p>
+        <p class="dl" style="left:360.0px;top:336.0px;color:#ffffff">118</p>
+        <p class="dl" style="left:360.0px;top:180.2px;color:#24406a">30</p>
+        <p class="dl" style="left:360.0px;top:121.7px">203</p>
+      </div>
+      <div style="position:absolute;left:0;top:0;width:1760px;height:591px">
+        <p class="dl" style="left:600.0px;top:502.3px;color:#ffffff">70</p>
+        <p class="dl" style="left:600.0px;top:307.6px;color:#ffffff">115</p>
+        <p class="dl" style="left:600.0px;top:153.9px;color:#24406a">31</p>
+        <p class="dl" style="left:600.0px;top:94.3px">216</p>
+      </div>
+      <div style="position:absolute;left:0;top:0;width:1760px;height:591px">
+        <p class="dl" style="left:840.0px;top:487.6px;color:#ffffff">84</p>
+        <p class="dl" style="left:840.0px;top:277.1px;color:#ffffff">116</p>
+        <p class="dl" style="left:840.0px;top:123.4px;color:#24406a">30</p>
+        <p class="dl" style="left:840.0px;top:64.8px">230</p>
+      </div>
+      <div style="position:absolute;left:0;top:0;width:1760px;height:591px">
+        <p class="dl" style="left:1080.0px;top:472.9px;color:#ffffff">98</p>
+        <p class="dl" style="left:1080.0px;top:249.7px;color:#ffffff">114</p>
+        <p class="dl" style="left:1080.0px;top:97.1px;color:#24406a">31</p>
+        <p class="dl" style="left:1080.0px;top:37.5px">243</p>
+      </div>
+      <div style="position:absolute;left:0;top:0;width:1760px;height:591px">
+        <p class="dl" style="left:1320.0px;top:458.1px;color:#ffffff">112</p>
+        <p class="dl" style="left:1320.0px;top:219.2px;color:#ffffff">115</p>
+        <p class="dl" style="left:1320.0px;top:66.6px;color:#24406a">30</p>
+        <p class="dl" style="left:1320.0px;top:8.0px">257</p>
+      </div>
+      <p style="position:absolute;left:1419.0px;top:458.1px;font-size:24px;line-height:30px;font-weight:700;color:var(--navy-700)">Online</p>
+      <p style="position:absolute;left:1419.0px;top:219.2px;font-size:24px;line-height:30px;font-weight:700;color:var(--navy-500)">Stores</p>
+      <p style="position:absolute;left:1419.0px;top:66.6px;font-size:24px;line-height:30px;font-weight:700;color:var(--muted)">Wholesale</p>
+    </div>
+    <div class="ax" style="width:1760px">
+      <p style="left:120.0px">’20</p>
+      <p style="left:360.0px">’21</p>
+      <p style="left:600.0px">’22</p>
+      <p style="left:840.0px">’23</p>
+      <p style="left:1080.0px">’24</p>
+      <p style="left:1320.0px">’25</p>
+    </div>
+    <p class="sowhat"><b>So what:</b> online’s share of revenue rose 21% → 44%, so the store network can shrink without losing sales.</p>
+  </div>
+  <div class="frule"></div>
+  <p class="src">Source: company annual reports 2020–2025, revenue excluding VAT (illustrative values)</p>
+  <p class="pg">Channel strategy<span>&#160;&#160;|&#160;&#160;</span>3</p>
+</div>

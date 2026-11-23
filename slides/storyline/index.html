@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ghost Decks</title>
+<style>
+/* Paper look, light only. Each column reads as one deck: key message, then numbered slides. */
+:root{color-scheme:light;--paper:#fbfaf7;--ink:#262626;--soft:#4a4743;--muted:#7a766f;--rule:#e3ded4;--accent:#1f4e79;--tint:#edf2f7;--group:#f2efe8;--card:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:14px/1.45 "Segoe UI",Helvetica,Arial,sans-serif}
+main{max-width:1440px;margin:0 auto;padding-block:28px 60px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+h1{font-size:22px;font-weight:600;margin:0 0 4px;text-wrap:balance}
+h2{font-size:18px;font-weight:600;color:var(--ink);margin:40px 0 14px;border-bottom:2px solid var(--accent);padding-bottom:6px}
+.meta{font-size:13px;color:var(--muted)}
+.intro{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin:0 0 14px;font-size:13px;color:var(--soft)}
+.switch{font:inherit;font-size:12.5px;border:1px solid var(--accent);color:var(--accent);background:var(--card);padding:4px 12px;cursor:pointer}
+.switch[aria-pressed="true"]{background:var(--accent);color:#fff}
+.decks{display:grid;gap:28px;align-items:start;margin-top:8px}
+/* header and slide list are two shared grid rows, so every deck's slides start on the same line */
+.decks{grid-template-rows:auto auto}
+.deck{min-width:0;display:grid;grid-template-rows:subgrid;grid-row:span 2}
+.dhead{cursor:pointer;padding-bottom:14px}
+.dlabel{font-size:12px;color:var(--muted)}
+.dlabel .rec{color:var(--accent);font-weight:600}
+.kmlabel{font-size:10.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-top:10px}
+.km{font-size:15px;font-weight:600;line-height:1.4;margin:3px 0 0;text-wrap:pretty}
+.dhead:hover .km{color:var(--accent)}
+.reason{display:none;font-size:12.5px;color:var(--soft);margin-top:8px}
+.reason p{margin:0 0 6px}
+.dhead.open .reason,.decision.open .reason{display:block}
+.slides{list-style:none;margin:0;padding:0;border-top:1px solid var(--rule);align-self:start}
+.group{border-bottom:1px solid var(--rule);padding:8px 0}
+/* slides that tell one story together sit on a faint shared ground, labelled in plain words */
+.group.multi{background:var(--group);margin:6px 0;padding:7px 8px 8px;border-bottom:0}
+.group.multi + .group{border-top:1px solid var(--rule)}
+.glabel{font-size:11px;color:var(--muted);margin:0 0 3px 26px}
+.slide{display:grid;grid-template-columns:22px 1fr;gap:0 4px;padding:3px 0;cursor:pointer}
+.slide .num{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;padding-top:1px}
+.slide .t{font-weight:600;font-size:13.5px;line-height:1.35}
+.slide:hover .t{color:var(--accent)}
+.flag{font-size:11.5px;color:#8a5a00;font-style:italic}
+.facts{display:none;grid-column:2;font-size:12.5px;color:var(--soft);margin:4px 0 4px}
+.slide.open .facts{display:block}
+.facts ul{list-style:none;margin:0;padding:0}
+.facts li{padding-left:14px;position:relative;margin:1px 0}
+.facts li::before{position:absolute;left:0;font-size:10px;top:2px;color:var(--muted)}
+.facts .available::before{content:"●"}.facts .partial::before{content:"◐"}.facts .missing::before{content:"○"}
+.facts .ex{color:var(--muted);margin-top:3px}
+.facts .calc{color:var(--muted);font-style:italic}
+.alt,.where{display:none;font-size:11.5px;color:var(--muted);margin:3px 0 0 26px}
+.group:has(.slide.open) .alt,.group:has(.slide.open) .where{display:block}
+.decision{padding:10px 0;border-top:1px solid var(--rule);max-width:900px}
+.decision:first-of-type{border-top:0}
+.decision .q{font-weight:600;cursor:pointer}
+.decision .q:hover{color:var(--accent)}
+.decision ul{margin:4px 0 0;padding-left:18px}
+.decision .rec{color:var(--accent);font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-left:4px}
+.decision .reason{margin-top:4px}
+ol.src{font-size:12px;color:var(--muted);padding-left:20px}
+a{color:inherit}
+.slide:focus-visible,.dhead:focus-visible,.decision .q:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width:900px){.decks{grid-template-columns:1fr !important;grid-template-rows:none}.deck{grid-row:auto;grid-template-rows:auto auto}}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script src="data.js"></script>
+<script>
+(function(){
+const G = window.GHOST || {};
+const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const stories = G.stories || [], decks = G.decks || [];
+const S = {}; stories.forEach(s => S[s.id] = s);
+const cutOf = (sid, cid) => (S[sid] && ((S[sid].cuts || []).find(c => c.id === cid) || (S[sid].cuts || [])[0])) || {slides: []};
+const where = {}; decks.forEach(d => (d.sequence || []).forEach(x => (where[x.story] = where[x.story] || []).push(d.id)));
+// A group's kind is free text from the model ("contrast pair", "before/after", ...); no fixed list.
+const n = c => (c.slides || []).length;
+// sources is a list; older data has a single source
+const srcIds = k => Array.isArray(k.sources) ? k.sources : k.source ? [k.source] : [];
+const kindText = c => c.kind && !/^single$/i.test(c.kind) ? String(c.kind) : "";
+const groupLabel = c => n(c) < 2 ? "" : kindText(c) ? `${kindText(c).charAt(0).toUpperCase()}${kindText(c).slice(1)} · ${n(c)} slides` : `Group of ${n(c)} slides`;
+const FLAG = {thin: "needs more evidence", "too much": "too much for one slide"};
+const altLabel = c => n(c) < 2 ? "one slide" : kindText(c) ? `${kindText(c)} (${n(c)} slides)` : `${n(c)} slides`;
+
+function deck(d){
+  let num = 0;
+  const groups = (d.sequence || []).map(x => {
+    const s = S[x.story]; if (!s) return "";
+    const cut = cutOf(x.story, x.cut), multi = (cut.slides || []).length > 1;
+    const others = (s.cuts || []).filter(c => c.id !== cut.id);
+    const elsewhere = (where[s.id] || []).filter(id => id !== d.id);
+    const slides = (cut.slides || []).map(sl => { num++; return `<div class="slide" tabindex="0" id="${esc(d.id)}-${esc(sl.id)}">
+        <span class="num">${num}</span><div><div class="t">${esc(sl.title)}</div>${FLAG[sl.substance] ? `<div class="flag">${FLAG[sl.substance]}</div>` : ""}</div>
+        <div class="facts"><ul>${(sl.keyInfo || []).map(k => `<li class="${esc(k.status)}">${esc(k.text)}${srcIds(k).length ? ` [${srcIds(k).map(esc).join(", ")}]` : ""}${k.calc ? `<div class="calc">Calculation: ${esc(k.calc)}</div>` : ""}</li>`).join("")}</ul>
+          ${sl.exhibit ? `<div class="ex">Exhibit idea: ${esc(sl.exhibit)}</div>` : ""}</div></div>`; }).join("");
+    return `<li class="group${multi ? " multi" : ""}" id="${esc(d.id)}-${esc(s.id)}">${multi ? `<div class="glabel">${groupLabel(cut)}</div>` : ""}${slides}
+      ${others.length ? `<div class="alt">Also possible as ${others.map(altLabel).join(" or ")}.</div>` : ""}
+      ${elsewhere.length ? `<div class="where">Also in deck ${elsewhere.map(esc).join(", ")}.</div>` : ""}</li>`;
+  }).join("");
+  // the key message headline is its first sentence; the rest opens with why and logic on click
+  const m = String(d.message || "").match(/^(.+?[.!?])(\s+([\s\S]*))?$/) || [null, d.message || "", "", ""];
+  const head = m[1], rest = (m[3] || "").trim();
+  return `<section class="deck" id="deck-${esc(d.id)}">
+    <div class="dhead" tabindex="0"><div class="dlabel">Deck ${esc(d.id)} · ${num} slides${d.recommended ? ' · <span class="rec">recommended</span>' : ""}</div>
+    <div class="kmlabel">Key message</div><p class="km">${esc(head)}</p>
+    <div class="reason">${rest ? `<p>${esc(rest)}</p>` : ""}${d.why ? `<p><b>Why:</b> ${esc(d.why)}</p>` : ""}${d.logic ? `<p><b>How it argues:</b> ${esc(d.logic)}</p>` : ""}</div></div>
+    <ol class="slides">${groups}</ol></section>`;
+}
+
+const decksHTML = decks.map(deck).join("");
+let h = `<h1>${esc(G.title)}</h1><div class="meta">${esc(G.audience)} · ${esc(G.purpose)}</div>
+`;
+if ((G.decisions || []).length) h += `<h2>Open questions</h2>` + G.decisions.map(q => `<div class="decision" id="${esc(q.id)}"><div class="q" tabindex="0">${esc(q.question)}</div>
+  ${q.why ? `<div class="reason">${esc(q.why)}</div>` : ""}
+  <ul>${(q.options || []).map(o => `<li id="${esc(o.id)}">${esc(o.label)}${o.id === q.recommended ? '<span class="rec">recommended</span>' : ""}</li>`).join("")}</ul></div>`).join("");
+h += `<h2>Ghost decks</h2><div class="intro"><span>Each column is one possible deck: its key message, then its slides in order, shown by their action titles. Click a key message for the reasoning, a slide for its key facts.</span></div>
+  <div class="decks" style="grid-template-columns:repeat(${Math.max(decks.length, 1)},minmax(250px,1fr))">${decksHTML}</div>`;
+if ((G.sources || []).length) h += `<h2>Sources</h2><ol class="src">` + G.sources.map(s => `<li id="${esc(s.id)}">[${esc(s.id)}] ${s.url && /^https?:/.test(s.url) ? `<a href="${esc(s.url)}">${esc(s.label)}</a>` : esc(s.label)}</li>`).join("") + `</ol>`;
+document.getElementById("app").innerHTML = h;
+
+// one behaviour everywhere: click (or Enter) opens and closes slides, key messages and questions
+const target = e => { const q = e.target.closest(".decision .q"); return q ? q.parentElement : e.target.closest(".slide, .dhead"); };
+document.getElementById("app").addEventListener("click", e => { const t = target(e); if (t) t.classList.toggle("open"); });
+document.getElementById("app").addEventListener("keydown", e => { const t = target(e); if (t && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); t.classList.toggle("open"); } });
+})();
+</script>
+</body>
+</html>

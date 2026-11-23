@@ -1,0 +1,55 @@
+<!-- @dsCard group="Slides" height=1080 width=1920 subtitle="Table: real GDP growth by region, with a World totals row and the 2026 column highlighted" -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400..700&family=Inter:wght@400..700&display=swap">
+<style>
+  :root { --font-serif: 'Newsreader', Georgia, serif; --font-sans: 'Inter', Arial, sans-serif; }
+  body { margin: 0; background: var(--surface); }
+  .s { position: relative; width: 1920px; height: 1080px; box-sizing: border-box; padding: 72px 80px 124px; background: var(--surface); color: var(--ink); font-family: var(--font-sans); display: flex; flex-direction: column; gap: 24px; overflow: hidden; }
+  .s p, .s h2 { margin: 0; }
+  .sticker { position: absolute; right: 80px; top: 16px; width: 230px; box-sizing: border-box; text-align: center; font-size: 24px; line-height: 30px; font-weight: 700; color: var(--navy-700); border: 2px solid var(--navy-700); border-radius: var(--radius-stamp); padding: 4px 12px; }
+  .title { font-family: var(--font-serif); font-variant-numeric: lining-nums; font-size: 52px; line-height: 60px; font-weight: 500; color: var(--navy-700); max-width: 1672px; }
+  .rule { height: 3px; background: var(--navy-700); flex: none; }
+  .body { flex: 1; display: flex; flex-direction: column; gap: 48px; padding-top: 16px; min-height: 0; }
+  table { width: 1760px; border-collapse: collapse; font-size: 24px; line-height: 32px; font-variant-numeric: tabular-nums lining-nums; }
+  th { font-size: 24px; line-height: 30px; font-weight: 700; color: var(--muted); text-align: right; padding: 0 32px 14px; border-bottom: 2px solid var(--navy-700); vertical-align: bottom; }
+  th:first-child, td:first-child { text-align: left; padding-left: 0; }
+  td { text-align: right; padding: 18px 32px; border-bottom: 1px solid var(--hairline); }
+  td:first-child { color: var(--ink); }
+  .col-r { width: 640px; }
+  .col-n { width: 373px; }
+  th.msg, td.msg { background: var(--panel); color: var(--navy-700); font-weight: 700; }
+  th.msg { padding-top: 14px; }
+  tr.total td { font-weight: 700; border-top: 2px solid var(--navy-700); border-bottom: none; padding-top: 18px; padding-bottom: 18px; }
+  .sowhat { font-size: 24px; line-height: 32px; border-top: 2px solid var(--slate-300); padding-top: 24px; }
+  .sowhat b { color: var(--navy-700); }
+  .frule { position: absolute; left: 80px; right: 80px; bottom: 98px; height: 3px; background: var(--navy-700); }
+  .src { position: absolute; left: 80px; bottom: 52px; width: 1300px; font-size: 24px; line-height: 30px; color: var(--muted); }
+  .pg { position: absolute; right: 80px; bottom: 52px; width: 440px; text-align: right; font-size: 24px; line-height: 30px; font-weight: 700; color: var(--navy-700); }
+  .pg span { color: var(--slate-300); }
+</style>
+<div class="s">
+  <p class="sticker">Illustrative</p>
+  <h2 class="title">India and China will grow faster than every advanced economy in 2026</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <table>
+      <colgroup><col class="col-r"><col class="col-n"><col class="col-n"><col class="col-n"></colgroup>
+      <thead>
+        <tr><th>Real GDP, all values in %</th><th>Share of world GDP ’25</th><th>Growth ’25</th><th class="msg">Growth ’26P</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>United States</td><td>15.0</td><td>2.0</td><td class="msg">1.9</td></tr>
+        <tr><td>Euro area</td><td>11.8</td><td>1.2</td><td class="msg">1.0</td></tr>
+        <tr><td>Japan</td><td>3.4</td><td>0.9</td><td class="msg">0.6</td></tr>
+        <tr><td>Other advanced economies</td><td>11.0</td><td>1.9</td><td class="msg">1.8</td></tr>
+        <tr><td>China</td><td>19.2</td><td>4.8</td><td class="msg">4.2</td></tr>
+        <tr><td>India</td><td>8.5</td><td>6.6</td><td class="msg">6.3</td></tr>
+        <tr><td>Other emerging and developing economies</td><td>31.1</td><td>4.2</td><td class="msg">3.7</td></tr>
+        <tr class="total"><td>World</td><td>100.0</td><td>3.5</td><td class="msg">3.1</td></tr>
+      </tbody>
+    </table>
+    <p class="sowhat"><b>So what:</b> new volume will come from Asian emerging markets, so the sales plan should weight them above their current share.</p>
+  </div>
+  <div class="frule"></div>
+  <p class="src">Source: IMF World Economic Outlook (October 2026), values illustrative; PPP weights; P = projection</p>
+  <p class="pg">Global economy briefing<span>&#160;&#160;|&#160;&#160;</span>9</p>
+</div>

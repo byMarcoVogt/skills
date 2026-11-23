@@ -1,0 +1,86 @@
+<!-- @dsCard group="Slides" height=1080 width=1920 subtitle="Chart slide in the house frame: world growth 2021–2027 (IMF WEO, Oct 2026)" -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400..700&family=Inter:wght@400..700&display=swap">
+<style>
+  :root { --font-serif: 'Newsreader', Georgia, serif; --font-sans: 'Inter', Arial, sans-serif; }
+  body { margin: 0; background: var(--surface); }
+  .s { position: relative; width: 1920px; height: 1080px; box-sizing: border-box; padding: 72px 80px 124px; background: var(--surface); color: var(--ink); font-family: var(--font-sans); display: flex; flex-direction: column; gap: 24px; overflow: hidden; }
+  .s p, .s h2, .s h3 { margin: 0; }
+  .sticker { position: absolute; right: 80px; top: 16px; width: 230px; box-sizing: border-box; text-align: center; font-size: 24px; line-height: 30px; font-weight: 700; color: var(--navy-700); border: 2px solid var(--navy-700); border-radius: var(--radius-stamp); padding: 4px 12px; }
+  .title { font-family: var(--font-serif); font-variant-numeric: lining-nums; font-size: 52px; line-height: 60px; font-weight: 500; color: var(--navy-700); }
+  .rule { height: 3px; background: var(--navy-700); }
+  .body { flex: 1; display: grid; grid-template-columns: 2fr 1fr; gap: 64px; min-height: 0; }
+  .ct { font-size: 28px; line-height: 34px; font-weight: 700; color: var(--navy-700); }
+  .legend { display: flex; gap: 40px; align-items: center; margin-top: 8px; }
+  .legend div { display: flex; gap: 12px; align-items: center; font-size: 24px; color: var(--muted); }
+  .col { display: flex; flex-direction: column; min-height: 0; }
+  .plot { position: relative; flex: 1; width: 1130px; border-bottom: 2px solid var(--hairline); margin-top: 8px; }
+  .bar { position: absolute; bottom: 0; width: 100px; box-sizing: border-box; display: flex; justify-content: center; padding-top: 10px; font-family: var(--font-sans); font-size: 26px; font-weight: 700; }
+  .msg { background: var(--navy-700); color: var(--surface); }
+  .ctx { background: var(--slate-300); color: var(--navy-700); }
+  .proj { background: var(--surface); border: 3px dashed var(--navy-700); color: var(--navy-700); }
+  .bench { position: absolute; left: 0; right: 0; bottom: 296px; border-top: 3px dashed var(--slate-500); }
+  .bench-l { position: absolute; right: 0; bottom: 303px; font-size: 24px; font-weight: 700; color: var(--slate-500); }
+  .note { position: absolute; width: max-content; font-size: 24px; line-height: 31px; color: var(--ink); border-bottom: 2px solid var(--muted); padding-bottom: 2px; }
+  .nrule { position: absolute; height: 2px; background: var(--muted); }
+  .lead { position: absolute; width: 2px; height: 22px; background: var(--muted); }
+  .dot { position: absolute; width: 14px; height: 14px; border-radius: 50%; background: var(--muted); }
+  .years { position: relative; width: 1130px; height: 34px; }
+  .years p { position: absolute; top: 0; width: 120px; text-align: center; font-size: 24px; color: var(--muted); }
+  .panel { background: var(--panel); padding: 40px; display: flex; flex-direction: column; gap: 24px; }
+  .pt { display: flex; gap: 12px; align-items: flex-start; border-top: 2px solid var(--divider); padding-top: 24px; font-size: 24px; line-height: 32px; }
+  .ic { flex: none; width: 48px; height: 48px; margin-top: -8px; border-radius: 50%; background: var(--surface); display: flex; align-items: center; justify-content: center; }
+  .sowhat { font-size: 24px; line-height: 32px; border-top: 2px solid var(--slate-300); padding-top: 24px; }
+  .sowhat b { color: var(--navy-700); }
+  .frule { position: absolute; left: 80px; right: 80px; bottom: 98px; height: 3px; background: var(--navy-700); }
+  .src { position: absolute; left: 80px; bottom: 52px; width: 1300px; font-size: 24px; color: var(--muted); }
+  .pg { position: absolute; right: 80px; bottom: 52px; width: 440px; text-align: right; font-size: 24px; font-weight: 700; color: var(--navy-700); }
+  .pg span { color: var(--slate-300); }
+</style>
+<div class="s">
+  <p class="sticker">For discussion</p>
+  <h2 class="title">After the rebound, global growth settled near 3.5%, below its old pace</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="col">
+      <p class="ct">World real GDP growth, in %</p>
+      <div class="legend">
+        <div><svg width="40" height="32" viewBox="0 0 40 32" aria-label="Solid bars: actual"><rect x="2" y="16" width="10" height="16" fill="#24406a"/><rect x="15" y="4" width="10" height="28" fill="#24406a"/><rect x="28" y="10" width="10" height="22" fill="#24406a"/></svg>Actual</div>
+        <div><svg width="40" height="32" viewBox="0 0 40 32" aria-label="Dashed bars: IMF projection"><rect x="3" y="17" width="8" height="14" fill="#fff" stroke="#24406a" stroke-width="2" stroke-dasharray="3 2"/><rect x="16" y="5" width="8" height="26" fill="#fff" stroke="#24406a" stroke-width="2" stroke-dasharray="3 2"/><rect x="29" y="11" width="8" height="20" fill="#fff" stroke="#24406a" stroke-width="2" stroke-dasharray="3 2"/></svg>IMF projection</div>
+        <div><svg width="40" height="32" viewBox="0 0 40 32" aria-label="Dashed line: 2000–19 average"><line x1="0" y1="16" x2="40" y2="16" stroke="#7d8a97" stroke-width="3" stroke-dasharray="5 4"/></svg>Ø 2000–19</div>
+      </div>
+      <div class="plot">
+        <div class="bar ctx" style="left:30px;height:536px">6.7</div>
+        <div class="bar msg" style="left:191px;height:304px">3.8</div>
+        <div class="bar msg" style="left:353px;height:264px">3.3</div>
+        <div class="bar msg" style="left:514px;height:280px">3.5</div>
+        <div class="bar msg" style="left:676px;height:280px">3.5</div>
+        <div class="bar proj" style="left:837px;height:248px">3.1</div>
+        <div class="bar proj" style="left:999px;height:272px">3.4</div>
+        <div class="bench"></div>
+        <p class="bench-l">Ø 3.7</p>
+        <p class="note" style="left:170px;bottom:350px"><b>The rebound faded.</b><br>2021 was reopening<br>after −2.7% in 2020.</p>
+        
+        <div class="lead" style="left:240px;bottom:326px"></div>
+        <div class="dot" style="left:234px;bottom:312px"></div>
+        <p class="note" style="left:640px;bottom:314px"><b>Dip to 3.1% in 2026, then 3.4%.</b><br>Risks tilt down.</p>
+        
+        <div class="lead" style="left:886px;bottom:270px;height:42px"></div>
+        <div class="dot" style="left:880px;bottom:256px"></div>
+      </div>
+      <div class="years">
+        <p style="left:20px">’21</p><p style="left:181px">’22</p><p style="left:343px">’23</p><p style="left:504px">’24</p><p style="left:666px">’25</p><p style="left:827px">’26P</p><p style="left:989px">’27P</p>
+      </div>
+    </div>
+    <div class="panel">
+      <h3 class="ct">What shaped the record</h3>
+      <div class="pt"><span class="ic"><svg width="28" height="28" viewBox="0 0 40 40" aria-label="Reopening icon"><path d="M4 30 L14 18 L22 24 L36 8" fill="none" stroke="#24406a" stroke-width="4"/></svg></span><p><b>Base effect.</b> 2021’s 6.7% was reopening, not new capacity.</p></div>
+      <div class="pt"><span class="ic"><svg width="28" height="28" viewBox="0 0 40 40" aria-label="Shock icon"><path d="M22 2 L8 22 H19 L16 38 L32 16 H21 Z" fill="#24406a"/></svg></span><p><b>Rate shock.</b> An energy spike and the fastest rate hikes in decades cut growth to 3.3% by 2023.</p></div>
+      <div class="pt"><span class="ic"><svg width="28" height="28" viewBox="0 0 40 40" aria-label="Resilience icon"><path d="M20 3 L35 9 V20 C35 29 28 35 20 38 C12 35 5 29 5 20 V9 Z" fill="none" stroke="#24406a" stroke-width="4"/></svg></span><p><b>Resilience.</b> A strong US and emerging Asia held 2024–25 at 3.5%, despite new tariffs.</p></div>
+      <div class="pt"><span class="ic"><svg width="28" height="28" viewBox="0 0 40 40" aria-label="Workforce icon"><circle cx="14" cy="12" r="6" fill="none" stroke="#24406a" stroke-width="4"/><path d="M3 36 C3 27 8 22 14 22 C20 22 25 27 25 36" fill="none" stroke="#24406a" stroke-width="4"/><circle cx="29" cy="14" r="5" fill="none" stroke="#24406a" stroke-width="4"/><path d="M29 23 C34 23 37 28 37 36" fill="none" stroke="#24406a" stroke-width="4"/></svg></span><p><b>Ageing.</b> Shrinking workforces cut trend growth in China and Europe.</p></div>
+      <p class="sowhat"><b>So what:</b> plan volumes on world growth near 3%, not on a rebound.</p>
+    </div>
+  </div>
+  <div class="frule"></div>
+  <p class="src">Source: IMF World Economic Outlook (October 2026); real GDP, PPP-weighted; P = IMF projection</p>
+  <p class="pg">Global economy briefing<span>&#160;&#160;|&#160;&#160;</span>3</p>
+</div>

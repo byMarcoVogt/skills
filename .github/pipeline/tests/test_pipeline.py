@@ -8,6 +8,7 @@ import git_guard  # noqa: E402
 import rules  # noqa: E402
 
 SHA, OTHER = "a" * 40, "b" * 40
+FILES = [{"filename": "demo/SKILL.md", "status": "modified", "sha": "c" * 40}]
 
 
 def md(version, body="text"):
@@ -74,9 +75,60 @@ class Evidence(unittest.TestCase):
         found = rules.find_evidence([ev("review"), ev("qa")], SHA, "owner")
         self.assertTrue(rules.check_evidence(found, True)[0])
 
-    def test_missing(self):
-        self.assertFalse(rules.check_evidence(rules.find_evidence([ev("review")], SHA, "owner"), True)[0])
-        self.assertFalse(rules.check_evidence({}, True)[0])
+    def check(self, *entries):
+        return rules.check_evidence(rules.find_evidence(list(entries), SHA, "owner"), True)
+
+    def test_G_a_review_that_took_place_meets_the_requirement(self):
+        qa = ev("qa")
+        self.assertTrue(self.check(ev("review", result="done"), qa)[0])
+        self.assertFalse(self.check(qa)[0])                                   # no review at all
+        self.assertIn("review", self.check(qa)[1])
+        self.assertTrue(self.check(ev("review", result="pass"), qa)[0])       # legacy pass counts like done
+        self.assertFalse(self.check(ev("review", result="fail"), qa)[0])      # legacy fail still blocks
+        self.assertFalse(self.check(ev("review", result="done"), ev("review", result="fail"), qa)[0])
+        self.assertFalse(self.check(ev("review", result="skipped"), qa)[0])   # a review is not skipped
+
+    def test_H_qa_passes_fails_or_is_left_out_with_a_reason(self):
+        review = ev("review", result="done")
+        self.assertTrue(self.check(review, ev("qa", result="pass"))[0])
+        self.assertFalse(self.check(review, ev("qa", result="fail"))[0])
+        self.assertFalse(self.check(review, ev("qa", result="fail", who=""))[0])          # signed or not
+        ok, text = self.check(review, ev("qa", result="skipped", report="no behaviour changed"))
+        self.assertTrue(ok)
+        self.assertIn("left out", text)
+        self.assertFalse(self.check(review, ev("qa", result="skipped", report=""))[0])    # no reason: not counted
+        ok, text = self.check(review)
+        self.assertFalse(ok)
+        self.assertIn("post the qa report or say why qa was left out", text)
+        # the newest entry per kind counts
+        self.assertTrue(self.check(review, ev("qa", result="fail"), ev("qa", result="skipped", report="why"))[0])
+        self.assertFalse(self.check(review, ev("qa", result="skipped", report="why"), ev("qa", result="fail"))[0])
+
+    def test_evidence_follows_the_content(self):
+        files = [{"filename": "demo/SKILL.md", "status": "modified", "sha": "1" * 40},
+                 {"filename": "demo/old.md", "status": "removed", "sha": "2" * 40}]
+        given = rules.files_hash(files)
+        hashed = lambda kind, h=given: ev(kind, who=f" model=m effort=e files={h}")
+        # given at SHA, read at OTHER: the same files with the same blobs, in any order, still count
+        same = rules.files_hash(list(reversed(files)))
+        self.assertEqual(rules.find_evidence([hashed("review")], OTHER, "owner", same), {"review": "pass"})
+        self.assertTrue(rules.check_evidence(rules.find_evidence([hashed("review"), hashed("qa")], OTHER, "owner", same), True)[0])
+        # one of the files changed, or one more file in the PR: it no longer counts
+        changed = rules.files_hash([dict(files[0], sha="3" * 40), files[1]])
+        more = rules.files_hash(files + [{"filename": "demo/new.md", "status": "added", "sha": "4" * 40}])
+        for now in (changed, more):
+            self.assertEqual(rules.find_evidence([hashed("review")], OTHER, "owner", now), {})
+        # a marker without a hash counts only for its own commit
+        self.assertEqual(rules.find_evidence([ev("review")], OTHER, "owner", same), {})
+        self.assertEqual(rules.find_evidence([ev("review")], SHA, "owner", same), {"review": "pass"})
+        # a rename as one row or as two rows, in any order, is the same content
+        one = [{"filename": "demo/b.md", "status": "renamed", "sha": "5" * 40, "previous_filename": "demo/a.md"}]
+        two = [{"filename": "demo/b.md", "status": "added", "sha": "5" * 40},
+               {"filename": "demo/a.md", "status": "removed", "sha": "6" * 40}]
+        self.assertEqual(rules.files_hash(one), rules.files_hash(two))
+        self.assertEqual(rules.files_hash(two), rules.files_hash(list(reversed(two))))
+        # with a hash, its own commit still counts even when the files moved on
+        self.assertEqual(rules.find_evidence([hashed("review")], SHA, "owner", changed), {"review": "pass"})
 
     def test_a_new_commit_voids_it(self):
         found = rules.find_evidence([ev("review"), ev("qa")], OTHER, "owner")
@@ -97,7 +149,13 @@ class Evidence(unittest.TestCase):
         self.assertFalse(ok)
         self.assertIn("model and effort: qa", text)
         for half in (" model=gpt-6-astra", " effort=high", " model= effort=high", " model=x effort="):
+            self.assertFalse(rules.check_evidence(rules.find_evidence([ev("review", who=half), ev("qa")], SHA, "owner"), True)[0], half)
             self.assertFalse(rules.check_evidence(rules.find_evidence([ev("review"), ev("qa", who=half)], SHA, "owner"), True)[0], half)
+            # a fail always counts, signed or not
+            for kind in ("review", "qa"):
+                found = rules.find_evidence([ev("review"), ev(kind, result="fail", who=half)], SHA, "owner")
+                self.assertFalse(rules.check_evidence(found, True)[0], (kind, half))
+                self.assertEqual(found[kind], "fail", (kind, half))
         # 'unknown' says plainly that a value could not be had, and counts
         found = rules.find_evidence([ev("review", who=" model=claude-fable-5-2 effort=unknown"), ev("qa")], SHA, "owner")
         self.assertTrue(rules.check_evidence(found, True)[0])
@@ -121,7 +179,7 @@ class Evidence(unittest.TestCase):
 
 class EvidenceCommand(unittest.TestCase):
     """evidence.py writes the marker the gate reads; model and effort come from the source that knows them."""
-    def post(self, argv, record=None, answer="looked\r\nat  it"):
+    def post(self, argv, record=None, answer="looked\r\nat  it", reviewed=None, nocommit=False, nofile=False):
         import json
         import tempfile
         import evidence
@@ -142,11 +200,14 @@ class EvidenceCommand(unittest.TestCase):
             if method == "POST":
                 posted.append(fields["body"])
                 return {"html_url": "url"}
-            return {"head": {"sha": SHA}}
+            if "/compare/" in path:
+                return {"files": reviewed if reviewed is not None else FILES}
+            return {"head": {"sha": SHA}, "base": {"ref": "main"}}
 
-        args = ["evidence.py", "--repo", "o/r", "--pr", "1", "--kind", "qa", "--result", "pass",
-                "--file", str(folder / "report.md")] + argv
-        with mock.patch.object(evidence, "api", api), mock.patch("sys.argv", args), \
+        args = ["evidence.py", "--repo", "o/r", "--pr", "1", "--kind", "qa", "--result", "pass"]
+        args = (args if not nofile else args[:-4]) + ([] if nofile else ["--file", str(folder / "report.md")]) + argv + ([] if "--commit" in argv or nocommit else ["--commit", SHA])
+        with mock.patch.object(evidence, "api", api), mock.patch.object(evidence, "paged", lambda path: FILES), \
+                mock.patch("sys.argv", args), \
                 mock.patch.dict("os.environ", {"ROUTE_RUNS": str(folder / "runs")}), mock.patch("builtins.print"):
             try:
                 evidence.cli()
@@ -160,13 +221,52 @@ class EvidenceCommand(unittest.TestCase):
 
     def test_given_values_are_written_and_count(self):
         body = self.post(["--model", "claude-fable-5-2", "--effort", "medium"])
-        self.assertIn("model=claude-fable-5-2 effort=medium -->", body)
+        self.assertIn(f"model=claude-fable-5-2 effort=medium files={rules.files_hash(FILES)} -->", body)
         self.assertEqual(body.splitlines()[1], "### QA evidence: pass, by `claude-fable-5-2` at effort `medium`")
         self.assertTrue(self.counts(body))
 
+    def test_the_marker_carries_the_content_and_counts_after_a_merge_of_main(self):
+        body = self.post(["--model", "m", "--effort", "e"])
+        found = rules.find_evidence([{"author": "owner", "body": body}], OTHER, "owner", rules.files_hash(FILES))
+        self.assertEqual(found, {"qa": "pass"})
+        moved = rules.files_hash([dict(FILES[0], sha="9" * 40)])
+        self.assertEqual(rules.find_evidence([{"author": "owner", "body": body}], OTHER, "owner", moved), {})
+
+    def test_the_reviewed_commit_must_have_the_same_content(self):
+        body = self.post(["--model", "m", "--effort", "e", "--commit", OTHER])
+        self.assertIn(f"sha={OTHER} ", body)
+        self.assertIn(f"files={rules.files_hash(FILES)}", body)
+        moved = self.post(["--model", "m", "--effort", "e", "--commit", OTHER], reviewed=[dict(FILES[0], sha="9" * 40)])
+        self.assertIsInstance(moved, Exception)
+        self.assertIn("moved", str(moved))
+        self.assertIn(f"sha={SHA} ", self.post(["--model", "m", "--effort", "e", "--commit", SHA]))
+        self.assertIsInstance(self.post(["--model", "m", "--effort", "e", "--commit", "abc"]), Exception)
+
+    def test_the_reviewed_commit_is_required(self):
+        self.assertIsInstance(self.post(["--model", "m", "--effort", "e"], nocommit=True), BaseException)
+
+    def test_H_skipped_needs_a_reason_and_no_file(self):
+        who = ["--model", "m", "--effort", "e", "--kind", "qa"]
+        for bad in (["--result", "skipped"], ["--result", "skipped", "--reason", "  "]):
+            self.assertIsInstance(self.post(who + bad, nofile=True), Exception, bad)
+        body = self.post(who + ["--result", "skipped", "--reason", "docs only"], nofile=True)
+        self.assertIn(" result=skipped model=m effort=e ", body)
+        self.assertTrue(body.rstrip().endswith("docs only"))
+        self.assertTrue(self.counts(body))
+        for bad in (["--kind", "review", "--result", "skipped", "--reason", "x"], ["--kind", "review", "--result", "pass"],
+                    ["--kind", "qa", "--result", "done"], ["--kind", "qa", "--result", "pass", "--reason", "x"]):
+            self.assertIsInstance(self.post(["--model", "m", "--effort", "e"] + bad, nofile=True), Exception, bad)
+
+    def test_G_a_review_is_posted_as_done_with_the_report_as_it_came(self):
+        body = self.post(["--model", "m", "--effort", "e", "--kind", "review", "--result", "done"])
+        self.assertIn(" result=done model=m effort=e ", body)
+        self.assertTrue(body.rstrip().endswith("looked at it"))
+        found = rules.find_evidence([{"author": "owner", "body": body}, ev("qa")], SHA, "owner")
+        self.assertTrue(rules.check_evidence(found, True)[0])
+
     def test_values_are_read_from_routes_record(self):
         body = self.post(["--route-run", "RUN1"], {"state": "ok", "model": "gpt-6.2-sol", "effort": "xhigh"})
-        self.assertIn("model=gpt-6.2-sol effort=xhigh -->", body)
+        self.assertIn("model=gpt-6.2-sol effort=xhigh files=", body)
         self.assertEqual(body.splitlines()[1], "### QA evidence: pass, by `gpt-6.2-sol` at effort `xhigh`")
         self.assertIn("read from route's record of that run", body)
         self.assertIn("`project-1/RUN1` in route's runs folder", body)
@@ -210,15 +310,18 @@ class EvidenceCommand(unittest.TestCase):
 
     def test_unknown_is_said_plainly(self):
         body = self.post(["--model", "claude-fable-5-2", "--effort", "unknown"])
-        self.assertIn("effort=unknown -->", body)
+        self.assertIn("effort=unknown files=", body)
         self.assertTrue(self.counts(body))
 
 
 class Protected(unittest.TestCase):
-    def test_pipeline_files_need_the_owner(self):
-        self.assertFalse(rules.check_protected([".github/pipeline/gate.py"], False)[0])
-        self.assertTrue(rules.check_protected([".github/pipeline/gate.py"], True)[0])
-        self.assertTrue(rules.check_protected(["demo/SKILL.md", "README.md"], False)[0])
+    def test_pipeline_files_pass_without_a_label(self):
+        ok, text = rules.check_protected([".github/pipeline/gate.py"])
+        self.assertTrue(ok)
+        self.assertIn("same review as any other change", text)
+        self.assertTrue(rules.check_protected(["demo/SKILL.md", "README.md"])[0])
+        # they still need evidence: a pipeline change counts as a change that needs a review
+        self.assertFalse(rules.check_evidence({}, bool(rules.protected_files([".github/pipeline/gate.py"])))[0])
 
 
 class Undo(unittest.TestCase):

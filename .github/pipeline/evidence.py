@@ -1,11 +1,19 @@
-"""Attach review or QA evidence to a pull request, bound to the commit it was given for.
+"""Attach review or QA evidence to a pull request, bound to the content it was given for.
 
-    python evidence.py --repo owner/name --pr 12 --kind review --result pass --file report.md \\
+    python evidence.py --repo owner/name --pr 12 --commit SHA --kind review --result pass --file report.md \\
                        --model claude-fable-5-2 --effort medium
-    python evidence.py --repo owner/name --pr 12 --kind qa --result pass --file report.md --route-run RUN
+    python evidence.py --repo owner/name --pr 12 --commit SHA --kind qa --result pass --file report.md --route-run RUN
+    python evidence.py --repo owner/name --pr 12 --commit SHA --kind qa --result skipped --reason "one sentence" \
+                       --model claude-fable-5-2 --effort medium
 
-The report becomes a PR comment whose first line names the PR's current commit. A later commit has another
-id, so the gate no longer counts this comment and the evidence has to be given again.
+A review is recorded as 'done': it says a review took place, not that it passed. A qa is 'pass' or 'fail', or
+'skipped' with a reason, which is the report.
+
+--commit is the commit the checker looked at. The report becomes a PR comment whose first line names that commit
+and a hash of its changed files
+with their blob ids. The gate counts it at that commit, and at a later commit whose changed files are the same
+(a merge of main that leaves them alone). A change to one of those files voids it and the evidence has to be
+given again.
 
 Every piece of evidence says which model produced it and at what reasoning effort; the gate does not count it
 otherwise. The values come from whoever knows them, not from the checker describing itself: for a run through
@@ -19,7 +27,7 @@ import re
 from pathlib import Path
 
 import rules
-from common import Failed, api, main
+from common import Failed, api, main, paged
 
 
 RUN_ID = re.compile(r"[A-Za-z0-9-]+")
@@ -59,17 +67,32 @@ def cli() -> int:
     ap.add_argument("--repo", required=True)
     ap.add_argument("--pr", type=int, required=True)
     ap.add_argument("--kind", choices=("review", "qa"), required=True)
-    ap.add_argument("--result", choices=("pass", "fail"), required=True)
-    ap.add_argument("--file", required=True, help="the report: what was looked at or run, and what came out")
+    ap.add_argument("--result", choices=("done", "pass", "fail", "skipped"), required=True)
+    ap.add_argument("--file", help="the report as it came: what was looked at or run, and what came out")
+    ap.add_argument("--reason", help="with --result skipped: one sentence on why qa was left out; it is the report")
     ap.add_argument("--by", default="", help="who gave it, for example 'second Claude agent' or 'GPT through route'")
     ap.add_argument("--route-run", help="the id of the route run that produced the report; model and effort are read from it")
     ap.add_argument("--model", help="the exact model id the checker ran on, or 'unknown'")
     ap.add_argument("--effort", help="the reasoning effort the checker ran at, or 'unknown'")
+    ap.add_argument("--commit", help="required: the full id of the commit the checker looked at; refused if the PR's files moved since")
     a = ap.parse_args()
 
-    report = Path(a.file).read_text(encoding="utf-8").strip()
-    if not report:
-        raise Failed("The report file is empty")
+    if a.result not in rules.RESULTS[a.kind]:
+        raise Failed(f"A {a.kind} takes --result " + ", ".join(rules.RESULTS[a.kind]))
+    if a.result == "skipped":
+        report = (a.reason or "").strip()
+        if not report:
+            raise Failed("--result skipped needs --reason: one sentence on why qa was left out")
+        if a.file:
+            raise Failed("--result skipped takes no --file: the reason is the report")
+    else:
+        if a.reason:
+            raise Failed("--reason goes only with --result skipped")
+        if not a.file:
+            raise Failed("Give the report with --file")
+        report = Path(a.file).read_text(encoding="utf-8").strip()
+        if not report:
+            raise Failed("The report file is empty")
     if a.route_run:
         if a.model or a.effort:
             raise Failed("Give --route-run or --model with --effort, not both: route's record is the source")
@@ -86,12 +109,27 @@ def cli() -> int:
     if not re.fullmatch(rules.EFFORT, effort):
         raise Failed(f"'{effort}' is not an effort level (letters, digits, . _ -)")
 
+    if not a.commit:
+        raise Failed("Say which commit was checked: --commit <full sha>, the commit the checker looked at")
+    if not re.fullmatch(r"[0-9a-f]{40}", a.commit):
+        raise Failed(f"'{a.commit}' is not a full commit id (40 hex digits)")
     pr = api(f"repos/{a.repo}/pulls/{a.pr}")
     if pr is None:
         raise Failed(f"{a.repo} has no pull request {a.pr}")
     sha = pr["head"]["sha"]
+    content = rules.files_hash(paged(f"repos/{a.repo}/pulls/{a.pr}/files"))
+    if (api(f"repos/{a.repo}/pulls/{a.pr}") or {}).get("head", {}).get("sha") != sha:
+        raise Failed("The pull request moved while its files were read; give the evidence again")
+    if a.commit != sha:
+        # the reviewer looked at an older commit: it counts only if the PR's files are the same there
+        at = api(f"repos/{a.repo}/compare/{pr['base']['ref']}...{a.commit}") or {}
+        if rules.files_hash(at.get("files") or []) != content:
+            raise Failed(f"The pull request moved: its files at {sha[:10]} differ from the reviewed commit "
+                         f"{a.commit[:10]}. Review the new commit and give the evidence again")
+        sha = a.commit
     title = {"review": "Review", "qa": "QA"}[a.kind]
-    body = (f"<!-- pipeline-evidence kind={a.kind} sha={sha} result={a.result} model={model} effort={effort} -->\n"
+    body = (f"<!-- pipeline-evidence kind={a.kind} sha={sha} result={a.result} model={model} effort={effort} "
+            f"files={content} -->\n"
             f"### {title} evidence: {a.result}, by `{model}` at effort `{effort}`\n\n"
             f"Model and effort {source}. For commit `{sha[:10]}`" +
             (f", by {a.by}" if a.by else "") + f".\n\n{report}\n")

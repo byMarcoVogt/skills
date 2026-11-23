@@ -464,6 +464,26 @@ class GuardFalseAlarms(unittest.TestCase):
                        ("mv C:/Claude/skills-private/demo C:/Temp/demo", "C:/elsewhere")):
             self.assertIsNotNone(self.deny(c, cwd=cwd), c)
 
+    def test_review_findings(self):
+        """Cases the review of this change found: everyday shapes, judged one by one."""
+        for c, cwd in (("git -C ../issue-4 push --force origin issue-4", TREE), ("git -C . push origin main", TREE),
+                       ('WT=C:/Claude/.worktrees/skills/x; git -C "$WT" push --force origin x', "C:/elsewhere")):
+            self.assertIsNotNone(self.deny(c, cwd=cwd), c)
+        self.assertIsNotNone(self.deny("$wt = 'C:/Claude/.worktrees/skills/x'; git -C $wt push origin main",
+                                       cwd="C:/elsewhere", tool="PowerShell"))
+        self.assertIsNotNone(self.deny('gh pr comment 3 --body "C:/x" ; git push --force origin x', tool="PowerShell"))
+        for c, cwd in (("gh issue create --repo me/skills --title 'guard misreads Bash heredocs' --body-file - <<'EOF'\n"
+                        "git push origin main\nEOF", TREE),
+                       ("gh pr comment 3 --body 'don'\\''t run git push origin main'", TREE),
+                       ('grep -rn "git commit" .', LIVE), ("rg -n 'git add' demo/SKILL.md", LIVE),
+                       ('git log --oneline --grep "git commit"', LIVE), ('grep -rn "gh pr merge" C:/Claude/skills', TREE),
+                       ("echo 'never git push origin main'", TREE), ("grep -rn move C:/Claude/skills/ship", "C:/elsewhere"),
+                       ("cd C:/Claude/skills && git worktree prune && rm -rf C:/Claude/.worktrees/skills/old", "C:/elsewhere"),
+                       ("git push --force-with-lease --force-if-includes origin issue-3", TREE),
+                       ("git archive -o ../snap.tar HEAD", LIVE)):
+            self.assertIsNone(self.deny(c, cwd=cwd), c)
+        self.assertIsNone(self.deny("git config --get core.hooksPath *>$null", cwd=PRIV, tool="PowerShell"))
+
     def test_other_folders_are_still_untouched(self):
         self.assertIsNone(self.deny("rm -rf C:/Temp/x", cwd=LIVE))
         self.assertIsNone(self.deny("git push --force origin main", cwd="C:/Claude/third"))

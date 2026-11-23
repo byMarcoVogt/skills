@@ -13,6 +13,7 @@ protection where the plan allows it, and the local git hooks.
 """
 import json
 import os
+import posixpath
 import re
 import sys
 from pathlib import Path
@@ -25,28 +26,34 @@ READ_ONLY = {"status", "log", "diff", "show", "fetch", "pull", "worktree", "bran
 GIT =re.compile(r"""\bgit(?:\.exe)?(?P<opts>(?:\s+(?:-c\s+\S+|-C\s+(?:"[^"]*"|'[^']*'|\S+)|--[a-z-]+(?:=\S+)?))*)\s+(?P<sub>[a-z][a-z-]*)""")
 DASH_C = re.compile(r"""-C\s+("[^"]*"|'[^']*'|\S+)""")
 CD = re.compile(r"""\b(?:cd|pushd|set-location|sl|chdir)\s+(?:/d\s+)?("[a-z]:/[^"]*"|'[a-z]:/[^']*'|[a-z]:/[^\s;&|)]*)""")
-REMOVE = re.compile(r"(?<![\w.-])(rm|rmdir|rd|del|erase|remove-item|ri|move-item|mv|move|ren|rename-item)(?![\w.-])")
-GIT_BEFORE = re.compile(r"\bgit(?:\.exe)?(?:\s+-[cC]\s+\S+)*\s+$")     # 'git rm' is judged by the per-call check
+# a removal command where a command starts (also after sudo, xargs or find's -exec); 'git rm' is judged per call
+REMOVE = re.compile(r"(?:^|\(|\bsudo|\bxargs(?:\s+-\S+)*|-exec(?:dir)?)\s*"
+                    r"(rm|rmdir|rd|del|erase|remove-item|ri|move-item|mv|move|ren|rename-item)(?![\w.-])")
 SEGMENT = re.compile(r"[^\n;&|]+")
+ABSOLUTE = re.compile(r"[a-z]:/|/|~", re.I)
 OUTPUT = re.compile(r"""(?<!\S)(?:-o|--output)(?:=|\s+)("[^"]*"|'[^']*'|\S+)""")
 
 # Text a command only carries (a body, a title, a commit message, a heredoc) is blanked before any rule looks,
 # so that writing about a command is not taken for running it. A heredoc or here-string fed to a shell stays.
-TEXT_FLAG = re.compile(r"""(?<!\S)(--body|--title|--message|--notes|--subject|-[bmt])(\s+|=)"""
-                       r"""("(?:[^"\\`]|\\.|`.)*"|'[^']*')""", re.S)
+# the escape inside double quotes is a backslash in bash and a backtick in PowerShell; '\'' is bash's apostrophe
+QUOTED = {"Bash": r"""("(?:[^"\\]|\\.)*"|'(?:[^']|'\\'')*')""", "PowerShell": r"""("(?:[^"`]|`.|"")*"|'(?:[^']|'')*')"""}
+TEXT_FLAG = r"""((?<!\S)(?:--body|--title|--message|--notes|--subject|--grep|-[bmt])(?:\s+|=)""" \
+            r"""|(?<![\w.-])(?:grep|rg|echo|printf|select-string|write-host|write-output)(?:\s+-[\w-]+)*\s+)"""
 HEREDOC = re.compile(r"""<<-?[ \t]*(["']?)([A-Za-z_][\w-]*)\1""")
 HERESTRING = re.compile(r"""@(["'])[ \t]*\r?\n.*?\r?\n\1@""", re.S)
-SHELL = re.compile(r"(?<![\w.-])(bash|sh|zsh|dash|pwsh|powershell|cmd|iex|invoke-expression)(\.exe)?(?![\w.-])", re.I)
+# a shell where a command starts, so a title that names Bash does not count
+SHELL = re.compile(r"(?:^|[|;&(]|\$\()\s*(bash|sh|zsh|dash|pwsh|powershell|cmd|iex|invoke-expression)(\.exe)?(?![\w.-])",
+                   re.I)
 
 # Judged against one git call (lower-cased, text blanked) that acts on a pipeline repo or names one.
 GIT_RULES = [
-    (r"\bpush\b.*(\s--force(?!-with-lease)|\s-f\b|\s\+\S)",
+    (r"\bpush\b.*(\s--force(?![\w-])|\s-f\b|\s\+\S)",
      "Force pushes are blocked. Use --force-with-lease on your own PR branch if you rebased it."),
     (r"\bpush\b.*([\s:]|refs/heads/)(main|master)(?![\w./-])",
      "Nobody pushes to main. Push your branch and open a pull request."),
     # reading the setting is fine; setting, unsetting or overriding it is not
     (r"(?<!\S)--no-verify\b|core\.hookspath\s*="
-     r"|\bconfig\b(\s+(--?[\w-]+(=\S+)?|set))*\s+core\.hookspath\s+(?!\d?>)[^\s|;&)>]"
+     r"|\bconfig\b(\s+(--?[\w-]+(=\S+)?|set))*\s+core\.hookspath\s+(?![\d*]?>)[^\s|;&)>]"
      r"|(--unset(-all)?|(?<!\S)unset)\s+(--?[\w-]+\s+)*core\.hookspath\b",
      "The local git hooks may not be skipped or re-pointed."),
     # a local tag is harmless: the pre-push hook refuses to push any tag
@@ -68,7 +75,7 @@ RULES = [   # (pattern on the lower-cased command, text blanked, what to do inst
 ]
 
 
-def mask(command: str) -> str:
+def mask(command: str, tool: str = "Bash") -> str:
     """The command with the text it only carries removed: heredoc and here-string bodies (unless a shell runs
     them) and the quoted values of --body, --title, -m and the like."""
     out, pos = [], 0
@@ -83,7 +90,8 @@ def mask(command: str) -> str:
     command = "".join(out) + command[pos:]
     command = HERESTRING.sub(lambda h: h.group(0) if SHELL.search(
         command[command.rfind("\n", 0, h.start()) + 1:h.start()]) else f"@{h.group(1)}\n{h.group(1)}@", command)
-    return TEXT_FLAG.sub(lambda t: t.group(1) + t.group(2) + t.group(3)[0] + "_" + t.group(3)[-1], command)
+    text = re.compile(TEXT_FLAG + QUOTED.get(tool, QUOTED["Bash"]), re.I | re.S)
+    return text.sub(lambda t: t.group(1) + t.group(2)[0] + "_" + t.group(2)[-1], command)
 
 
 def norm(text: str) -> str:
@@ -122,7 +130,7 @@ def decide(payload: dict, cfg: dict) -> str | None:
     if tool not in ("Bash", "PowerShell"):
         return None
 
-    raw = mask(args.get("command") or "").replace("\\", "/")      # case kept: git -C is not git -c
+    raw = mask(args.get("command") or "", tool).replace("\\", "/")      # case kept: git -C is not git -c
     command = norm(raw)
     cwd_live = any(inside(cwd, p) for p in live)
     names = lambda text: any(re.search(at(x), text) for x in live + slugs + linked + [worktrees])  # noqa: E731
@@ -139,9 +147,12 @@ def decide(payload: dict, cfg: dict) -> str | None:
 
     for m in GIT.finditer(raw):
         target = DASH_C.search(m.group("opts"))
-        where = target.group(1).strip("\"'") if target else folder(m.start())
+        where = norm(target.group(1).strip("\"'")) if target else folder(m.start())
+        if not ABSOLUTE.match(where) and "$" not in where:      # a relative -C starts from the call's folder
+            where = posixpath.normpath(norm(folder(m.start())).rstrip("/") + "/" + where)
         call = norm(SEGMENT.match(raw, m.start()).group(0))
-        if inside(where, worktrees) or any(inside(where, p) for p in live) or names(call):
+        # a folder held in a variable is unknown: the call is judged as if it acted on a pipeline repo
+        if inside(where, worktrees) or any(inside(where, p) for p in live) or names(call) or "$" in where:
             for pattern, reason in GIT_RULES:       # one call, judged by the folder it acts on
                 if re.search(pattern, call):
                     return reason
@@ -150,7 +161,8 @@ def decide(payload: dict, cfg: dict) -> str | None:
         out = OUTPUT.search(call) if sub == "archive" else None
         if on_live and out:     # an archive written into the live clone would change it
             path = norm(out.group(1).strip("\"'"))
-            on_live = any(inside(path if re.match(r"[a-z]:/|/|~", path) else where + "/" + path, p) for p in live)
+            path = path if ABSOLUTE.match(path) else posixpath.normpath(norm(where).rstrip("/") + "/" + path)
+            on_live = any(inside(path, p) for p in live)
             sub = "archive -o"
         if on_live and (sub not in READ_ONLY):
             return (f"'git {sub}' would change the live copy of main. It is read-only here: "
@@ -159,10 +171,12 @@ def decide(payload: dict, cfg: dict) -> str | None:
     live_path = [re.escape(norm(x).rstrip("/")) + r"(/[\w.-]+)?[\"']?(\s|$)" for x in live + linked]
     for s in SEGMENT.finditer(command):             # a removal is judged within its own call
         r = REMOVE.search(s.group(0))
-        if not r or GIT_BEFORE.search(s.group(0)[:r.start()]):
+        if not r:
             continue
         moves = [c.group(1).strip("\"'") for c in CD.finditer(command[:s.start()])]   # a cd into a live folder first
-        if any(re.search(p, s.group(0)) for p in live_path) or (moves and any(inside(moves[-1], x) for x in live + linked)):
+        relative = [a for a in s.group(0)[r.end():].split() if not a.startswith("-") and not ABSOLUTE.match(a.strip("\"'"))]
+        after_cd = moves and any(inside(moves[-1], x) for x in live + linked) and (relative or not s.group(0)[r.end():].split())
+        if any(re.search(p, s.group(0)) for p in live_path) or after_cd:
             return "Deleting or moving a live skill folder or its link is the owner's call."
     return None
 

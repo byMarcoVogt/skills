@@ -11,7 +11,8 @@ that an agent can build from without the conversation.</p>
 
 <p align="center">It reads what exists before it asks. It asks one real decision at a time, with options and a recommendation,<br>
 and names the weakest assumption, a cheaper path and the option to build nothing.<br>
-It stops when the plan holds the intent, a done-when, the touchpoints and the few open questions left.</p>
+It stops when the plan holds the intent, a done-when, the touchpoints, how building fits daily use, and the few open questions left.<br>
+When there is nothing to decide, it says so and writes no plan.</p>
 
 It feeds `ship`, a private build pipeline, and works without it: the plan then goes to `plans/` as Markdown.
 

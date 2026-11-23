@@ -13,13 +13,13 @@ The thinking before `ship`: turn what the user brings into one plan file that a 
 
 ## Read first
 
-Before the first question, read the repo and its instructions, the skills it touches, open and recently closed issues, earlier plans, everything the user names (even what the repo calls no source), and what this conversation already settled. Then a few lines: what you read, the goal as you understand it, the decisions you see, and the weakest assumption under the idea. Sort a brain dump; do not echo it. If nothing needs the user's choice, say so and stop: `ship` builds without a plan.
+Before the first question, read the repo and its instructions, the skills it touches, open and recently closed issues, earlier plans, everything the user names (even what the repo calls no source), and what this conversation already settled. Then a few lines: what you read, the goal as you understand it, the decisions you see, and the weakest assumption under the idea. Sort a brain dump; do not echo it. If nothing needs the user's choice and no file was asked for, say so and stop: `ship` builds without a plan.
 
 ## Ask
 
 - One decision per question, one question at a time, and only what the user has to choose: goal, taste, risk, cost, what stays out, what only they can do. What the files answer is looked up. What a builder can settle stays open in the plan as the builder's call.
 - Two or three options, context inside each, the recommendation first with one line why. Before sending, check the question and each option against what the files and the user already settled, and drop what they settled or ruled out. Use the question tool where there is one.
-- Plain words: a term the user has not used gets its meaning in the same sentence. An answer that does not clearly pick an option decides nothing: say how you read it and ask again, or leave it open. Left to you, it becomes your recommendation, marked as a proposal.
+- Plain words: a term the user has not used gets its meaning in the same sentence. An unclear answer decides nothing: say how you read it and ask again, or leave it open. Left to you, it becomes your recommendation, recorded as delegated.
 - Chat stays a few lines around the question. Pictures, comparisons and side material go into the trail, with one line in chat.
 - For a hard-to-reverse choice the user cannot judge alone, get an independent view first (agents with other stances, or another model family through `route`).
 

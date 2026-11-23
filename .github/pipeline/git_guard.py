@@ -26,10 +26,12 @@ READ_ONLY = {"status", "log", "diff", "show", "fetch", "pull", "worktree", "bran
 GIT =re.compile(r"""\bgit(?:\.exe)?(?P<opts>(?:\s+(?:-c\s+\S+|-C\s+(?:"[^"]*"|'[^']*'|\S+)|--[a-z-]+(?:=\S+)?))*)\s+(?P<sub>[a-z][a-z-]*)""")
 DASH_C = re.compile(r"""-C\s+("[^"]*"|'[^']*'|\S+)""")
 CD = re.compile(r"""\b(?:cd|pushd|set-location|sl|chdir)\s+(?:/d\s+)?("[a-z]:/[^"]*"|'[a-z]:/[^']*'|[a-z]:/[^\s;&|)]*)""")
-# a removal command where a command starts (also after sudo, xargs or find's -exec); 'git rm' is judged per call
-REMOVE = re.compile(r"(?:^|\(|\bsudo|\bxargs(?:\s+-\S+)*|-exec(?:dir)?)\s*"
-                    r"(rm|rmdir|rd|del|erase|remove-item|ri|move-item|mv|move|ren|rename-item)(?![\w.-])")
+# a removal word on its own (not inside a name like route-move); 'git rm' and 'git mv' are judged per call
+REMOVE = re.compile(r"(?<![\w.-])(rm|rmdir|rd|del|erase|remove-item|ri|move-item|mv|move|ren|rename-item)(?![\w.-])")
+GIT_BEFORE = re.compile(r"\bgit(?:\.exe)?(?:\s+-[cC]\s+\S+)*\s+$")
 SEGMENT = re.compile(r"[^\n;&|]+")
+PIPELINE = re.compile(r"(?:[^\n;&|]|(?<!\|)\|(?!\|))+")     # calls joined by a single pipe: ls <live> | Remove-Item
+SEARCH = re.compile(r"(?<![\w.-])(grep|rg|echo|printf|select-string|write-host|write-output)(?![\w.-])[^\n;&|]*", re.I)
 ABSOLUTE = re.compile(r"[a-z]:/|/|~", re.I)
 OUTPUT = re.compile(r"""(?<!\S)(?:-o|--output)(?:=|\s+)("[^"]*"|'[^']*'|\S+)""")
 
@@ -37,8 +39,7 @@ OUTPUT = re.compile(r"""(?<!\S)(?:-o|--output)(?:=|\s+)("[^"]*"|'[^']*'|\S+)""")
 # so that writing about a command is not taken for running it. A heredoc or here-string fed to a shell stays.
 # the escape inside double quotes is a backslash in bash and a backtick in PowerShell; '\'' is bash's apostrophe
 QUOTED = {"Bash": r"""("(?:[^"\\]|\\.)*"|'(?:[^']|'\\'')*')""", "PowerShell": r"""("(?:[^"`]|`.|"")*"|'(?:[^']|'')*')"""}
-TEXT_FLAG = r"""((?<!\S)(?:--body|--title|--message|--notes|--subject|--grep|-[bmt])(?:\s+|=)""" \
-            r"""|(?<![\w.-])(?:grep|rg|echo|printf|select-string|write-host|write-output)(?:\s+-[\w-]+)*\s+)"""
+TEXT_FLAG = r"""((?<!\S)(?:--body|--title|--message|--notes|--subject|--grep|-[bmt])(?:\s+|=))"""
 HEREDOC = re.compile(r"""<<-?[ \t]*(["']?)([A-Za-z_][\w-]*)\1""")
 HERESTRING = re.compile(r"""@(["'])[ \t]*\r?\n.*?\r?\n\1@""", re.S)
 # a shell where a command starts, so a title that names Bash does not count
@@ -90,8 +91,10 @@ def mask(command: str, tool: str = "Bash") -> str:
     command = "".join(out) + command[pos:]
     command = HERESTRING.sub(lambda h: h.group(0) if SHELL.search(
         command[command.rfind("\n", 0, h.start()) + 1:h.start()]) else f"@{h.group(1)}\n{h.group(1)}@", command)
-    text = re.compile(TEXT_FLAG + QUOTED.get(tool, QUOTED["Bash"]), re.I | re.S)
-    return text.sub(lambda t: t.group(1) + t.group(2)[0] + "_" + t.group(2)[-1], command)
+    quoted = QUOTED.get(tool, QUOTED["Bash"])
+    command = re.sub(TEXT_FLAG + quoted, lambda t: t.group(1) + t.group(2)[0] + "_" + t.group(2)[-1], command, flags=re.S)
+    # a search or an echo only carries its quoted arguments too: grep -rn --include='*.md' "git commit" .
+    return SEARCH.sub(lambda s: re.sub(quoted, lambda q: q.group(0)[0] + "_" + q.group(0)[-1], s.group(0)), command)
 
 
 def norm(text: str) -> str:
@@ -148,11 +151,11 @@ def decide(payload: dict, cfg: dict) -> str | None:
     for m in GIT.finditer(raw):
         target = DASH_C.search(m.group("opts"))
         where = norm(target.group(1).strip("\"'")) if target else folder(m.start())
-        if not ABSOLUTE.match(where) and "$" not in where:      # a relative -C starts from the call's folder
+        unknown = "$" in where      # a folder held in a variable is unknown: judged as a pipeline repo
+        if not ABSOLUTE.match(where) and not unknown:      # a relative -C starts from the call's folder
             where = posixpath.normpath(norm(folder(m.start())).rstrip("/") + "/" + where)
         call = norm(SEGMENT.match(raw, m.start()).group(0))
-        # a folder held in a variable is unknown: the call is judged as if it acted on a pipeline repo
-        if inside(where, worktrees) or any(inside(where, p) for p in live) or names(call) or "$" in where:
+        if inside(where, worktrees) or any(inside(where, p) for p in live) or names(call) or unknown:
             for pattern, reason in GIT_RULES:       # one call, judged by the folder it acts on
                 if re.search(pattern, call):
                     return reason
@@ -169,13 +172,14 @@ def decide(payload: dict, cfg: dict) -> str | None:
                     "create a worktree (git worktree add) and work on a branch there.")
 
     live_path = [re.escape(norm(x).rstrip("/")) + r"(/[\w.-]+)?[\"']?(\s|$)" for x in live + linked]
-    for s in SEGMENT.finditer(command):             # a removal is judged within its own call
-        r = REMOVE.search(s.group(0))
+    for s in PIPELINE.finditer(command):            # a removal is judged within its own call or pipe
+        r = next((r for r in REMOVE.finditer(s.group(0)) if not GIT_BEFORE.search(s.group(0)[:r.start()])), None)
         if not r:
             continue
         moves = [c.group(1).strip("\"'") for c in CD.finditer(command[:s.start()])]   # a cd into a live folder first
-        relative = [a for a in s.group(0)[r.end():].split() if not a.startswith("-") and not ABSOLUTE.match(a.strip("\"'"))]
-        after_cd = moves and any(inside(moves[-1], x) for x in live + linked) and (relative or not s.group(0)[r.end():].split())
+        words = re.sub(r"-(erroraction|ea|warningaction|wa)\s+\S+|\S*>\S*", " ", s.group(0)[r.end():]).split()
+        relative = [a for a in words if not a.startswith("-") and not ABSOLUTE.match(a.strip("\"'"))]
+        after_cd = moves and any(inside(moves[-1], x) for x in live + linked) and (relative or not words)
         if any(re.search(p, s.group(0)) for p in live_path) or after_cd:
             return "Deleting or moving a live skill folder or its link is the owner's call."
     return None

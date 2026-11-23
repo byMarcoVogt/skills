@@ -477,12 +477,24 @@ class GuardFalseAlarms(unittest.TestCase):
                        ("gh pr comment 3 --body 'don'\\''t run git push origin main'", TREE),
                        ('grep -rn "git commit" .', LIVE), ("rg -n 'git add' demo/SKILL.md", LIVE),
                        ('git log --oneline --grep "git commit"', LIVE), ('grep -rn "gh pr merge" C:/Claude/skills', TREE),
-                       ("echo 'never git push origin main'", TREE), ("grep -rn move C:/Claude/skills/ship", "C:/elsewhere"),
+                       ("echo 'never git push origin main'", TREE), ('grep -rn "move" C:/Claude/skills/ship', "C:/elsewhere"),
+                       ("grep -rn --include='*.md' \"git commit\" .", LIVE), ("rg -g '*.md' \"git commit\"", LIVE),
+                       ('grep -A 2 "git commit" ship/SKILL.md', LIVE), ('grep -B 3 "git push origin main" notes.txt', TREE),
+                       ("cd C:/Claude/skills && git status; rm -f C:/Temp/x.txt 2>/dev/null", "C:/elsewhere"),
                        ("cd C:/Claude/skills && git worktree prune && rm -rf C:/Claude/.worktrees/skills/old", "C:/elsewhere"),
                        ("git push --force-with-lease --force-if-includes origin issue-3", TREE),
                        ("git archive -o ../snap.tar HEAD", LIVE)):
             self.assertIsNone(self.deny(c, cwd=cwd), c)
         self.assertIsNone(self.deny("git config --get core.hooksPath *>$null", cwd=PRIV, tool="PowerShell"))
+        self.assertIsNone(self.deny("Set-Location C:\\Claude\\skills; git status; Remove-Item C:\\Temp\\x -ErrorAction "
+                                    "SilentlyContinue", cwd="C:/elsewhere", tool="PowerShell"))
+        for c in ("cmd /c rmdir C:\\Claude\\skills\\demo", "cmd /c rd /s /q C:\\Claude\\skills\\demo",
+                  "if (Test-Path C:\\Claude\\skills\\demo) { Remove-Item -Recurse -Force C:\\Claude\\skills\\demo }",
+                  "Get-ChildItem C:\\Claude\\skills\\demo -Recurse | Remove-Item -Force"):
+            self.assertIsNotNone(self.deny(c, cwd="C:/elsewhere", tool="PowerShell"), c)
+        for c in ("command rm -rf C:/Claude/skills/demo", "/bin/rm -rf C:/Claude/skills/demo",
+                  "ls -d C:/Claude/skills/demo | xargs -I{} rm -rf {}"):
+            self.assertIsNotNone(self.deny(c, cwd="C:/elsewhere"), c)
 
     def test_other_folders_are_still_untouched(self):
         self.assertIsNone(self.deny("rm -rf C:/Temp/x", cwd=LIVE))

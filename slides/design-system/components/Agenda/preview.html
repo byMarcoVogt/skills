@@ -1,0 +1,54 @@
+<!-- @dsCard group="Slides" height=1080 width=1920 subtitle="Agenda repeated before section 2: four sections, the current one navy, the others muted" -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400..700&family=Inter:wght@400..700&display=swap">
+<style>
+  :root { --font-serif: 'Newsreader', Georgia, serif; --font-sans: 'Inter', Arial, sans-serif; }
+  body { margin: 0; background: var(--surface); }
+  .s { position: relative; width: 1920px; height: 1080px; box-sizing: border-box; padding: 72px 80px 124px; background: var(--surface); color: var(--ink); font-family: var(--font-sans); display: flex; flex-direction: column; gap: 24px; overflow: hidden; }
+  .s p, .s h2 { margin: 0; }
+  .title { font-family: var(--font-serif); font-variant-numeric: lining-nums; font-size: 52px; line-height: 60px; font-weight: 500; color: var(--navy-700); max-width: 1672px; }
+  .rule { height: 3px; background: var(--navy-700); flex: none; }
+  .rows { display: flex; flex-direction: column; }
+  .row { display: grid; grid-template-columns: 48px 1fr 200px; column-gap: 24px; align-items: start; padding: 61px 0; border-top: 1px solid var(--hairline); color: var(--muted); }
+  .row:first-child { border-top: none; }
+  .row h3 { margin: 0; font-size: 24px; line-height: 32px; font-weight: 700; }
+  .row p { font-size: 24px; line-height: 32px; }
+  .row .n { text-align: right; font-size: 24px; line-height: 32px; font-variant-numeric: tabular-nums lining-nums; color: var(--muted); }
+  .row svg { display: block; margin: 2px auto 0; stroke: var(--muted); }
+  .row.cur h3 { color: var(--navy-700); }
+  .row.cur p { color: var(--ink); }
+  .row.cur p.n { color: var(--muted); }
+  .row.cur svg { stroke: var(--navy-700); }
+  .frule { position: absolute; left: 80px; right: 80px; bottom: 98px; height: 3px; background: var(--navy-700); }
+  .src { position: absolute; left: 80px; bottom: 52px; width: 1300px; font-size: 24px; line-height: 30px; color: var(--muted); }
+  .pg { position: absolute; right: 80px; bottom: 52px; width: 440px; text-align: right; font-size: 24px; line-height: 30px; font-weight: 700; color: var(--navy-700); }
+  .pg span { color: var(--slate-300); }
+</style>
+<div class="s">
+  <h2 class="title">Plan for world growth near 3% through 2027, not the pre-2020 pace</h2>
+  <div class="rule"></div>
+  <div class="rows">
+    <div class="row">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Bar chart icon"><path d="M3 21h18M6 21v-7M11 21V9M16 21v-5M21 21V6"/></svg>
+      <div><h3>Where growth stands</h3><p>How far world growth has settled since the post-COVID rebound</p></div>
+      <p class="n">3</p>
+    </div>
+    <div class="row cur">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Falling trend icon"><path d="M3 6l6 6 4-4 8 8M21 10v6h-6"/></svg>
+      <div><h3>What holds growth down</h3><p>Which forces keep growth below its 2000–19 average, and for how long</p></div>
+      <p class="n">7</p>
+    </div>
+    <div class="row">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Globe icon"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9M12 3C9.5 5.7 8.2 8.7 8.2 12s1.3 6.3 3.8 9"/></svg>
+      <div><h3>Where growth still comes from</h3><p>Which regions and economies will add the most volume to 2027</p></div>
+      <p class="n">12</p>
+    </div>
+    <div class="row">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Target icon"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
+      <div><h3>What it means for our plan</h3><p>Which targets and markets to adjust in the 2027 budget</p></div>
+      <p class="n">18</p>
+    </div>
+  </div>
+  <div class="frule"></div>
+  <p class="src">Source: IMF World Economic Outlook (October 2026); team analysis</p>
+  <p class="pg">Global economy briefing<span>&#160;&#160;|&#160;&#160;</span>6</p>
+</div>

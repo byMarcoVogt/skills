@@ -1,0 +1,331 @@
+{
+  "version": 5,
+  "color": {
+    "themes": [
+      {
+        "id": "light",
+        "name": "Light"
+      }
+    ],
+    "tokens": [
+      {
+        "name": "navy-700",
+        "value": {
+          "light": "#24406a"
+        },
+        "usage": "The house colour: action titles, title and footer rules, message bars, stickers, big numbers, callout band, section dividers, waterfall totals, table rules, arrows and pills. 10:1 on surface."
+      },
+      {
+        "name": "navy-500",
+        "value": {
+          "light": "#5d7a99"
+        },
+        "usage": "Second data series, waterfall increases, the middle segment of a stack, cover separators. Differs from navy-700 in lightness. 4.6:1 on surface."
+      },
+      {
+        "name": "navy-600",
+        "value": {
+          "light": "#2b4b78"
+        },
+        "usage": "Cover gradient, light end."
+      },
+      {
+        "name": "navy-900",
+        "value": {
+          "light": "#18304f"
+        },
+        "usage": "Cover gradient, dark end."
+      },
+      {
+        "name": "slate-300",
+        "value": {
+          "light": "#a9b4bf"
+        },
+        "usage": "Context data (a prior-period bar), waterfall decreases, the top segment of a stack, so-what rule, the footer label's '|' separator, the section label on a navy divider. Never for running text on white."
+      },
+      {
+        "name": "slate-500",
+        "value": {
+          "light": "#7d8a97"
+        },
+        "usage": "Benchmark lines (Ø) and the average symbol."
+      },
+      {
+        "name": "ink",
+        "value": {
+          "light": "#222222"
+        },
+        "usage": "Body text on surface and panel. 16:1."
+      },
+      {
+        "name": "muted",
+        "value": {
+          "light": "#666666"
+        },
+        "usage": "Units, axis labels, legends, sources, annotation leaders. 5.7:1 on surface."
+      },
+      {
+        "name": "hairline",
+        "value": {
+          "light": "#d0d0d0"
+        },
+        "usage": "Chart baselines, the vertical baseline of horizontal bars, card dividers, flag rings. Lines, never fills."
+      },
+      {
+        "name": "divider",
+        "value": {
+          "light": "#e3e6ea"
+        },
+        "usage": "Dividers between rows inside a grey panel."
+      },
+      {
+        "name": "panel",
+        "value": {
+          "light": "#f2f4f6"
+        },
+        "usage": "Grey panels and cards. Ink keeps 14:1 on it."
+      },
+      {
+        "name": "surface",
+        "value": {
+          "light": "#ffffff"
+        },
+        "usage": "Slide background. Content slides are always white."
+      }
+    ]
+  },
+  "type": {
+    "fonts": [],
+    "families": {
+      "serif": "'Newsreader', Georgia, serif",
+      "sans": "'Inter', Arial, sans-serif"
+    },
+    "groups": [
+      {
+        "name": "Headlines",
+        "family": "serif",
+        "note": "",
+        "styles": [
+          {
+            "name": "cover-title",
+            "fontSize": "104px",
+            "lineHeight": "110px",
+            "fontWeight": "500",
+            "letterSpacing": "0",
+            "fontStyle": "normal",
+            "opticalSize": null,
+            "family": "",
+            "sample": "Slower growth is the new normal",
+            "usage": "Deck title on the cover, white on navy. A statement, not a topic."
+          },
+          {
+            "name": "action-title",
+            "fontSize": "52px",
+            "lineHeight": "60px",
+            "fontWeight": "500",
+            "letterSpacing": "0",
+            "fontStyle": "normal",
+            "opticalSize": null,
+            "family": "",
+            "sample": "After the post-COVID rebound, global growth settled around 3.5%",
+            "usage": "One per content slide, navy-700, one sentence, two lines at most."
+          }
+        ]
+      },
+      {
+        "name": "Text",
+        "family": "sans",
+        "note": "",
+        "styles": [
+          {
+            "name": "big-number",
+            "fontSize": "52px",
+            "lineHeight": "56px",
+            "fontWeight": "700",
+            "letterSpacing": "0",
+            "fontStyle": "normal",
+            "opticalSize": null,
+            "family": "",
+            "sample": "+0.2%",
+            "usage": "A key figure or delta, navy-700, bold, clearly larger than its label, the % sign at full size. One for a message, up to four as a row of equals. Always in the sans."
+          },
+          {
+            "name": "chart-title",
+            "fontSize": "28px",
+            "lineHeight": "34px",
+            "fontWeight": "700",
+            "letterSpacing": "0",
+            "fontStyle": "normal",
+            "opticalSize": null,
+            "family": "",
+            "sample": "World real GDP growth, in %",
+            "usage": "What the chart measures, with its unit after a comma. navy-700."
+          },
+          {
+            "name": "callout",
+            "fontSize": "28px",
+            "lineHeight": "36px",
+            "fontWeight": "700",
+            "letterSpacing": "0",
+            "fontStyle": "normal",
+            "opticalSize": null,
+            "family": "",
+            "sample": "Plan for ~3% world growth.",
+            "usage": "The one sentence in a navy callout band, white, centred."
+          },
+          {
+            "name": "body",
+            "fontSize": "24px",
+            "lineHeight": "32px",
+            "fontWeight": "400",
+            "letterSpacing": "0",
+            "fontStyle": "normal",
+            "opticalSize": null,
+            "family": "",
+            "sample": "Energy prices and rapid rate hikes cut growth to 3.3% by 2023.",
+            "usage": "Body text, annotations, card text. ink."
+          },
+          {
+            "name": "body-strong",
+            "fontSize": "24px",
+            "lineHeight": "32px",
+            "fontWeight": "700",
+            "letterSpacing": "0",
+            "fontStyle": "normal",
+            "opticalSize": null,
+            "family": "",
+            "sample": "Rate shock.",
+            "usage": "Bold lead-in that opens a point, and the 'So what:' label."
+          },
+          {
+            "name": "data-label",
+            "fontSize": "26px",
+            "lineHeight": "30px",
+            "fontWeight": "700",
+            "letterSpacing": "0",
+            "fontStyle": "normal",
+            "opticalSize": null,
+            "family": "",
+            "sample": "3.3",
+            "usage": "Values on or above bars; replaces the y-axis. One position per chart: all inside or all outside."
+          },
+          {
+            "name": "stamp",
+            "fontSize": "24px",
+            "lineHeight": "30px",
+            "fontWeight": "700",
+            "letterSpacing": "0",
+            "fontStyle": "normal",
+            "opticalSize": null,
+            "family": "",
+            "sample": "For discussion",
+            "usage": "Slide sticker top right, navy-700 in a navy outline."
+          },
+          {
+            "name": "footnote",
+            "fontSize": "24px",
+            "lineHeight": "30px",
+            "fontWeight": "400",
+            "letterSpacing": "0",
+            "fontStyle": "normal",
+            "opticalSize": null,
+            "family": "",
+            "sample": "Source: IMF World Economic Outlook (October 2026)",
+            "usage": "Sources, legends, axis labels. muted."
+          }
+        ]
+      }
+    ]
+  },
+  "spacing": {
+    "note": "",
+    "tokens": [
+      {
+        "name": "space-2",
+        "value": "12px",
+        "usage": "Label to bar, icon to its text."
+      },
+      {
+        "name": "space-4",
+        "value": "24px",
+        "usage": "Between title, rule and body; between points."
+      },
+      {
+        "name": "space-6",
+        "value": "40px",
+        "usage": "Panel padding."
+      },
+      {
+        "name": "space-8",
+        "value": "64px",
+        "usage": "Gutter between chart and panel."
+      },
+      {
+        "name": "margin-side",
+        "value": "80px",
+        "usage": "Left and right slide margin."
+      },
+      {
+        "name": "margin-top",
+        "value": "72px",
+        "usage": "Top margin above the action title."
+      },
+      {
+        "name": "margin-bottom",
+        "value": "124px",
+        "usage": "Bottom zone that holds the footer rule, source and page label."
+      },
+      {
+        "name": "footer-rule",
+        "value": "98px",
+        "usage": "Distance of the 3px footer rule from the bottom edge. The check script finds the footer by it."
+      },
+      {
+        "name": "title-line-max",
+        "value": "95%",
+        "usage": "No line of an action title may be wider than this share of the content width (1760px). Measured by the check script."
+      },
+      {
+        "name": "icon-circle",
+        "value": "48px",
+        "usage": "Bullet icon: white circle (radius-full) left of its text, centred on the text's first line."
+      },
+      {
+        "name": "icon-glyph",
+        "value": "28px",
+        "usage": "Icon inside the bullet circle; also the size of inline SVG icons drawn on the 24px grid."
+      },
+      {
+        "name": "flag",
+        "value": "40px",
+        "usage": "Round flag diameter, with a 2px hairline ring."
+      },
+      {
+        "name": "arrow-lift",
+        "value": "48px",
+        "usage": "Trend arrows run between points this far above the bar tops."
+      }
+    ]
+  },
+  "radius": {
+    "note": "",
+    "tokens": [
+      {
+        "name": "radius-none",
+        "value": "0",
+        "usage": "Bars, panels, cards, callout band. The system is square."
+      },
+      {
+        "name": "radius-stamp",
+        "value": "4px",
+        "usage": "The slide sticker only."
+      },
+      {
+        "name": "radius-full",
+        "value": "999px",
+        "usage": "Icon circles, annotation dots, status circles."
+      }
+    ]
+  },
+  "name": "Marco Vogt Slides"
+}

@@ -1,0 +1,83 @@
+<!-- @dsCard group="Slides" height=1080 width=1920 subtitle="Line chart in the house frame: heat pumps installed 2012 to 2030 with projection (illustrative)" -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400..700&family=Inter:wght@400..700&display=swap">
+<style>
+  :root { --font-serif: 'Newsreader', Georgia, serif; --font-sans: 'Inter', Arial, sans-serif; }
+  .s { position: relative; width: 1920px; height: 1080px; box-sizing: border-box; padding: 72px 80px 124px; background: var(--surface); color: var(--ink); font-family: var(--font-sans); display: flex; flex-direction: column; gap: 24px; overflow: hidden; }
+  .s :where(p, h2) { margin: 0; }
+  .sticker { position: absolute; right: 80px; top: 16px; font-size: 24px; line-height: 30px; font-weight: 700; color: var(--navy-700); border: 2px solid var(--navy-700); border-radius: var(--radius-stamp); padding: 4px 16px; }
+  .title { max-width: 1672px; font-family: var(--font-serif); font-size: 52px; line-height: 60px; font-weight: 500; color: var(--navy-700); font-variant-numeric: lining-nums; }
+  .rule { flex: none; height: 3px; background: var(--navy-700); }
+  .body { display: flex; flex-direction: column; }
+  .ct { font-size: 28px; line-height: 34px; font-weight: 700; color: var(--navy-700); }
+  .legend { display: flex; gap: 40px; align-items: center; height: 32px; margin-top: 12px; }
+  .legend div { display: flex; gap: 12px; align-items: center; font-size: 24px; line-height: 30px; color: var(--muted); }
+  .plot { position: relative; margin-top: 24px; }
+  .plot svg { position: absolute; left: 0; top: 0; overflow: visible; }
+  .dl { position: absolute; width: 120px; margin-left: -60px; text-align: center; font-size: 26px; line-height: 30px; font-weight: 700; color: var(--navy-700); font-variant-numeric: lining-nums; }
+  .ax { position: relative; height: 30px; margin-top: 12px; }
+  .ax p { position: absolute; top: 0; width: 200px; margin-left: -100px; text-align: center; font-size: 24px; line-height: 30px; color: var(--muted); }
+  .note { position: absolute; width: max-content; font-size: 24px; line-height: 32px; color: var(--ink); border-bottom: 2px solid var(--muted); }
+  .lead { position: absolute; width: 2px; background: var(--muted); }
+  .dot { position: absolute; width: 14px; height: 14px; border-radius: 50%; background: var(--muted); }
+  .sowhat { margin-top: 24px; font-size: 24px; line-height: 32px; border-top: 2px solid var(--slate-300); padding-top: 24px; }
+  .sowhat b { color: var(--navy-700); }
+  .frule { position: absolute; left: 80px; right: 80px; bottom: 98px; height: 3px; background: var(--navy-700); }
+  .src { position: absolute; left: 80px; bottom: 52px; width: 1300px; font-size: 24px; line-height: 30px; color: var(--muted); }
+  .pg { position: absolute; right: 80px; bottom: 52px; width: 400px; text-align: right; font-size: 24px; line-height: 30px; font-weight: 700; color: var(--navy-700); }
+  .pg span { color: var(--slate-300); }
+</style>
+<div class="s">
+  <p class="sticker">Illustrative</p>
+  <h2 class="title">At today’s pace, Germany will reach only two-thirds of its 2030 heat pump target</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <p class="ct">Heat pumps installed in German homes, in m units</p>
+    <div class="plot" style="width:1760px;height:531px">
+      <svg width="1760" height="531" viewBox="0 0 1760 531" aria-label="Installed heat pumps 2012 to 2030">
+        <line x1="0" y1="531.0" x2="1460" y2="531.0" stroke="#d0d0d0" stroke-width="2"/><line x1="0" y1="374.0" x2="1460" y2="374.0" stroke="#d0d0d0" stroke-width="1"/><line x1="0" y1="217.0" x2="1460" y2="217.0" stroke="#d0d0d0" stroke-width="1"/><line x1="0" y1="60.0" x2="1460" y2="60.0" stroke="#d0d0d0" stroke-width="1"/>
+        <polyline points="980.0,377.1 1056.7,324.5 1133.3,272.0 1210.0,219.4 1286.7,166.8 1363.3,113.4 1440.0,60.0" fill="none" stroke="#a9b4bf" stroke-width="3" stroke-linejoin="round"/>
+        <polyline points="1056.7,350.4 1133.3,323.8 1210.0,297.1 1286.7,270.4 1363.3,243.7 1440.0,217.0" fill="none" stroke="#24406a" stroke-width="4" stroke-dasharray="12 8" stroke-linejoin="round"/>
+        <polyline points="60.0,491.8 136.7,487.0 213.3,482.3 290.0,476.8 366.7,470.6 443.3,463.5 520.0,456.4 596.7,448.6 673.3,439.2 750.0,427.4 826.7,411.7 903.3,388.1 980.0,377.1 1056.7,350.4" fill="none" stroke="#24406a" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+        <circle cx="60.0" cy="491.8" r="7" fill="#24406a"/>
+        <circle cx="1056.7" cy="350.4" r="7" fill="#24406a"/>
+        <circle cx="1440.0" cy="217.0" r="7" fill="#24406a"/>
+        <circle cx="1440.0" cy="60.0" r="7" fill="#a9b4bf"/>
+      </svg>
+      <p class="dl" style="left:60.0px;top:442.8px">0.5</p>
+      <p class="dl" style="left:1056.7px;top:384.0px">2.3</p>
+      <p style="position:absolute;left:1460.0px;top:45.0px;font-size:24px;line-height:30px;color:var(--muted);white-space:nowrap"><b style="font-size:26px;color:var(--navy-700)">6.0</b>&#160;&#160;Government target</p>
+      <p style="position:absolute;left:1460.0px;top:202.0px;font-size:24px;line-height:30px;color:var(--navy-700);white-space:nowrap"><b style="font-size:26px;color:var(--navy-700)">4.0</b>&#160;&#160;At current pace</p>
+      <p style="position:absolute;left:0;top:340.0px;font-size:24px;line-height:30px;color:var(--muted)">2</p>
+      <p style="position:absolute;left:0;top:183.0px;font-size:24px;line-height:30px;color:var(--muted)">4</p>
+      <p style="position:absolute;left:0;top:26.0px;font-size:24px;line-height:30px;color:var(--muted)">6</p>
+      <p class="note" style="left:600.0px;bottom:241.86px"><b>Sales nearly halved in 2024</b><br>while subsidy rules were rewritten</p>
+      <div class="lead" style="left:979.0px;top:289.1px;height:56px"></div>
+      <div class="dot" style="left:973.0px;top:345.1px"></div>
+    </div>
+    <div class="ax" style="width:1760px">
+      <p style="left:60.0px">’12</p>
+      <p style="left:136.7px">’13</p>
+      <p style="left:213.3px">’14</p>
+      <p style="left:290.0px">’15</p>
+      <p style="left:366.7px">’16</p>
+      <p style="left:443.3px">’17</p>
+      <p style="left:520.0px">’18</p>
+      <p style="left:596.7px">’19</p>
+      <p style="left:673.3px">’20</p>
+      <p style="left:750.0px">’21</p>
+      <p style="left:826.7px">’22</p>
+      <p style="left:903.3px">’23</p>
+      <p style="left:980.0px">’24</p>
+      <p style="left:1056.7px">’25</p>
+      <p style="left:1133.3px">’26P</p>
+      <p style="left:1210.0px">’27P</p>
+      <p style="left:1286.7px">’28P</p>
+      <p style="left:1363.3px">’29P</p>
+      <p style="left:1440.0px">’30P</p>
+    </div>
+    <p class="sowhat"><b>So what:</b> the 2030 target needs about 0.7m installations a year from 2026, twice the current rate.</p>
+  </div>
+  <div class="frule"></div>
+  <p class="src">Source: industry association, 2012–2025; P = projection at the 2025 rate (illustrative values)</p>
+  <p class="pg">Heat transition<span>&#160;&#160;|&#160;&#160;</span>7</p>
+</div>

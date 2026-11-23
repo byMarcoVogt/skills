@@ -352,10 +352,10 @@ class Guard(unittest.TestCase):
     def test_blocked_in_a_worktree(self):
         for c in ("git push --force", "git push -f origin issue-3", "git push origin main", "git push origin HEAD:main",
                   "git push origin HEAD:refs/heads/main", "git commit --no-verify -m x", "git config core.hooksPath /tmp",
-                  "git tag demo--v9.9.9", "git push --tags", "gh release create demo--v1", "gh pr merge 3 --squash",
+                  "git push --tags", "gh release create demo--v1", "gh pr merge 3 --squash",
                   "gh pr merge 3 --admin", "gh api -X PUT repos/me/skills/branches/main/protection",
-                  "gh api repos/me/skills/statuses/abc -f state=success", "gh pr edit 3 --add-label owner-approved",
-                  "gh secret set X", "gh repo edit --visibility public", "git remote set-url origin x"):
+                  "gh api repos/me/skills/statuses/abc -f state=success",
+                  "gh secret set X","gh repo edit --visibility public", "git remote set-url origin x"):
             self.assertIsNotNone(self.deny(c), c)
 
     def test_allowed_in_a_worktree(self):
@@ -408,6 +408,65 @@ class Guard(unittest.TestCase):
         self.assertIsNotNone(self.deny("rm -rf C:/Claude/skills/demo", cwd="C:/elsewhere"))
         self.assertIsNotNone(self.deny("Remove-Item -Recurse C:\\Claude\\skills-private", cwd="C:/elsewhere", tool="PowerShell"))
         self.assertIsNone(self.deny("rm -rf C:/Claude/.worktrees/skills/issue-3/tmp"))
+
+
+LIVE, PRIV = "C:/Claude/skills", "C:/Claude/skills-private"
+
+
+class GuardFalseAlarms(unittest.TestCase):
+    """The harmless commands from issue 24 of the private skills repo, each blocked before this fix."""
+    def deny(self, command, cwd=TREE, tool="Bash"):
+        return git_guard.decide({"tool_name": tool, "tool_input": {"command": command}, "cwd": cwd}, CFG)
+
+    def test_text_in_a_body_message_or_heredoc_is_not_a_command(self):
+        for c, cwd in (
+                ("gh issue create --repo me/skills --title 'x' --body 'Run git push origin main to see it'", "C:/Claude/third"),
+                ("gh issue create --repo other/x --title t --body 'the git history shows it'", PRIV),
+                ('gh pr comment 51 --body "the git history is clean"', PRIV),
+                ("gh issue comment 24 --repo me/skills-private --body-file - <<'EOF'\nA read of core.hooksPath was refused."
+                 "\nAlso git push origin main.\nEOF", "C:/elsewhere"),
+                ('gh pr create --title "fix: x" --body "$(cat <<\'EOF\'\nnever git push --force\nEOF\n)"', TREE),
+                ('git commit -m "fix: say why nobody does git push origin main"', TREE),
+                ("cat > C:/Temp/t.py <<'EOF'\nprint('git push origin main')\nEOF", "C:/Claude/.worktrees/x"),
+                ("gh pr comment 3 --body @'\nthe git history and --no-verify\n'@", PRIV)):
+            self.assertIsNone(self.deny(c, cwd=cwd, tool="PowerShell" if "@'" in c else "Bash"), c)
+
+    def test_a_git_call_is_judged_by_the_folder_it_acts_on(self):
+        self.assertIsNone(self.deny("ls C:/Claude/skills/demo; git push origin main", cwd="C:/Claude/third"))
+        self.assertIsNone(self.deny("cd C:/Claude/skills && git worktree add C:/Claude/.worktrees/skills/x origin/main"
+                                    " && cd C:/Claude/.worktrees/skills/x && git rm -r demo", cwd="C:/elsewhere"))
+        self.assertIsNone(self.deny("cd C:/Claude/skills && git worktree add C:/Claude/.worktrees/skills/x origin/main"
+                                    " && git -C C:/Claude/.worktrees/skills/x rm -r demo", cwd="C:/elsewhere"))
+        self.assertIsNone(self.deny("git -C C:/Claude/skills-private worktree add "
+                                    "C:/Claude/.worktrees/skills-private/route-move -b route-move origin/main", cwd="C:/elsewhere"))
+
+    def test_reading_commands_in_a_live_clone(self):
+        for c in ("git archive origin/b demo | tar -x -C C:/Temp/x", "git archive -o C:/Temp/snap.tar abc123",
+                  "git config core.hooksPath", "git config --get core.hooksPath", "git config core.hooksPath 2>/dev/null",
+                  "git tag | grep demo", "git tag", "git show-ref --tags"):
+            self.assertIsNone(self.deny(c, cwd=PRIV), c)
+
+    def test_the_real_protections_still_hold(self):
+        for c, cwd in (("git restore demo/SKILL.md", LIVE), ("git commit -am x", LIVE), ("git add .", PRIV),
+                       ("cd C:/Claude/skills && git checkout -b x", "C:/elsewhere"),
+                       ("git archive -o snap.tar HEAD", LIVE), ("git archive --output=C:/Claude/skills/x.tar HEAD", LIVE),
+                       ("git push origin main", TREE), ("git push origin HEAD:main", PRIV),
+                       ("git push https://github.com/me/skills HEAD:main", "C:/elsewhere"),
+                       ("ls x; git push origin main", TREE), ('git commit -m "x" && git push origin main', TREE),
+                       ('bash -c "git push origin main"', TREE), ("bash <<'EOF'\ngit push origin main\nEOF", TREE),
+                       ("git push --force origin issue-3", TREE), ("git push --tags", TREE),
+                       ("git config core.hooksPath /tmp/x", TREE), ("git config set core.hooksPath x", TREE),
+                       ("git config --unset core.hooksPath", TREE), ("git -c core.hooksPath=/dev/null commit -m x", TREE),
+                       ('git commit --no-verify -m "x"', TREE), ("gh pr merge 3", TREE),
+                       ("gh pr merge 3 --repo me/skills", "C:/elsewhere"),
+                       ("rm -rf C:/Claude/skills/demo", "C:/elsewhere"), ("cd C:/Claude/skills && rm -rf demo", "C:/elsewhere"),
+                       ("find C:/Claude/skills/demo -name x -exec rm {} +", "C:/elsewhere"),
+                       ("mv C:/Claude/skills-private/demo C:/Temp/demo", "C:/elsewhere")):
+            self.assertIsNotNone(self.deny(c, cwd=cwd), c)
+
+    def test_other_folders_are_still_untouched(self):
+        self.assertIsNone(self.deny("rm -rf C:/Temp/x", cwd=LIVE))
+        self.assertIsNone(self.deny("git push --force origin main", cwd="C:/Claude/third"))
 
 
 class NoWindow(unittest.TestCase):

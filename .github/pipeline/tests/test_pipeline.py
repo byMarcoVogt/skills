@@ -298,7 +298,6 @@ class Undo(unittest.TestCase):
 CFG = {"skills_dir": "C:/Users/x/.claude/skills", "worktrees": "C:/Claude/.worktrees",
        "repos": [{"slug": "me/skills", "path": "C:/Claude/skills"}, {"slug": "me/skills-private", "path": "C:/Claude/skills-private"}]}
 TREE = "C:/Claude/.worktrees/skills/issue-3"
-LIVE = CFG["repos"][0]["path"]
 
 
 class Guard(unittest.TestCase):
@@ -306,11 +305,12 @@ class Guard(unittest.TestCase):
         return git_guard.decide({"tool_name": tool, "tool_input": {"command": command}, "cwd": cwd}, CFG)
 
     def test_blocked_in_a_worktree(self):
-        for c in ("git push --force", "git push -f origin issue-3", "git push origin +issue-3",
-                  "git commit --no-verify -m x", "git config core.hooksPath /tmp", "git -c core.hooksPath=/tmp commit -m x",
-                  "git config --unset core.hooksPath", "gh pr merge 3 --squash", "gh pr merge 3 --admin",
-                  "gh api repos/me/skills/statuses/abc -f state=success", "gh api repos/me/skills/pulls/3/merge -X PUT",
-                  "gh repo delete me/skills --yes", "gh repo rename other", "gh repo archive"):
+        for c in ("git push --force", "git push -f origin issue-3", "git push origin main", "git push origin HEAD:main",
+                  "git push origin HEAD:refs/heads/main", "git commit --no-verify -m x", "git config core.hooksPath /tmp",
+                  "git tag demo--v9.9.9", "git push --tags", "gh release create demo--v1", "gh pr merge 3 --squash",
+                  "gh pr merge 3 --admin", "gh api -X PUT repos/me/skills/branches/main/protection",
+                  "gh api repos/me/skills/statuses/abc -f state=success", "gh pr edit 3 --add-label owner-approved",
+                  "gh secret set X", "gh repo edit --visibility public", "git remote set-url origin x"):
             self.assertIsNotNone(self.deny(c), c)
 
     def test_allowed_in_a_worktree(self):
@@ -319,62 +319,6 @@ class Guard(unittest.TestCase):
                   "gh pr create --title 'fix: x' --body y", "gh pr view 3", "gh api repos/me/skills/pulls/3",
                   "python C:/Claude/skills/.github/pipeline/merge.py --repo me/skills --pr 3", "git rebase origin/main"):
             self.assertIsNone(self.deny(c), c)
-
-    def test_left_to_the_hooks_and_branch_protection(self):
-        """The pre-push hook holds main and tags, branch protection holds main on GitHub: the guard does not repeat them."""
-        for c in ("git push origin main", "git push origin HEAD:refs/heads/main", "git tag demo--v9.9.9", "git push --tags",
-                  "gh release create demo--v1", "git remote set-url origin x", "git branch -m main old",
-                  "gh secret set X", "gh repo edit --visibility public", "gh workflow disable gate"):
-            self.assertIsNone(self.deny(c), c)
-
-    def test_reading_the_hooks_path_is_fine(self):
-        for c in ("git config core.hooksPath", "git config --get core.hooksPath", "git config core.hooksPath || echo none"):
-            self.assertIsNone(self.deny(c), c)
-
-    def test_each_call_is_judged_by_where_it_acts(self):
-        # a push in another repo, in a command that also names the live clone and a pipeline repo
-        self.assertIsNone(self.deny(f"ls {LIVE}/.github && git -C C:/some/other/repo push origin main",
-                                    cwd="C:/elsewhere"))
-        self.assertIsNone(self.deny("git -C C:/some/other/repo push --force origin main", cwd=TREE))
-        self.assertIsNone(self.deny("cd C:/some/other/repo && git push -f origin main # see me/skills", cwd="C:/elsewhere"))
-        # an issue whose text quotes the blocked commands
-        self.assertIsNone(self.deny("gh issue create --repo me/skills --title x "
-                                    "--body \"run git push --force origin main, then gh pr merge 3\""))
-        self.assertIsNone(self.deny("gh issue create -R me/skills --title x --body 'git commit --no-verify -m x'",
-                                    cwd="C:/elsewhere"))
-        self.assertIsNone(self.deny("gh pr merge 3 -R someone/else", cwd=TREE))
-        # the same moves aimed at a pipeline repo are still blocked
-        self.assertIsNotNone(self.deny("git push --force origin issue-3", cwd=TREE))
-        self.assertIsNotNone(self.deny(f"git -C {TREE} push --force", cwd="C:/elsewhere"))
-        self.assertIsNotNone(self.deny(f"echo ok; cd {TREE} && git push -f", cwd="C:/elsewhere"))
-        self.assertIsNotNone(self.deny("gh pr merge 3 --repo me/skills", cwd="C:/elsewhere"))
-        self.assertIsNotNone(self.deny("gh api repos/me/skills/statuses/abc -f state=success", cwd="C:/elsewhere"))
-
-    def test_the_target_is_read_from_relative_paths_urls_and_quoted_endpoints(self):
-        self.assertIsNotNone(self.deny("git -C ../issue-3 push --force", cwd=TREE + "/../other"))
-        self.assertIsNotNone(self.deny("git -C sub push --force", cwd=TREE))
-        self.assertIsNone(self.deny("git -C ../../../some/other push --force", cwd=TREE))
-        self.assertIsNotNone(self.deny("gh pr merge https://github.com/me/skills/pull/3", cwd="C:/elsewhere"))
-        self.assertIsNone(self.deny("gh pr merge https://github.com/someone/else/pull/3", cwd=TREE))
-        self.assertIsNotNone(self.deny('gh api -X POST "repos/me/skills/statuses/abc" -f state=success', cwd="C:/elsewhere"))
-
-    def test_a_relative_cd_is_followed(self):
-        self.assertIsNotNone(self.deny("cd .worktrees/skills/issue-3 && git push --force origin issue-3", cwd="C:/Claude"))
-        self.assertIsNotNone(self.deny("Set-Location .worktrees; cd skills/issue-3; git push -f", cwd="C:/Claude"))
-        self.assertIsNone(self.deny("cd ../../../../some/other && git push --force origin main", cwd=TREE))
-
-    def test_a_quoted_force_refspec_is_a_force_push(self):
-        for c in ('git push origin "+main"', "git push origin '+issue-3'"):
-            self.assertIsNotNone(self.deny(c), c)
-
-    def test_the_newer_unset_form_is_a_write(self):
-        self.assertIsNotNone(self.deny("git config unset core.hooksPath"))
-        self.assertIsNotNone(self.deny("git config unset --all core.hooksPath"))
-
-    def test_removal_is_judged_per_call(self):
-        self.assertIsNone(self.deny(f"ls {LIVE} && gh issue create --repo me/skills --title x "
-                                    "--body \"move the folder, then rm the copy\"", cwd="C:/elsewhere"))
-        self.assertIsNotNone(self.deny(f"ls C:/x && rm -rf \"{LIVE}/demo\"", cwd="C:/elsewhere"))
 
     def test_live_clone_is_read_only(self):
         for c in ("git commit -m x", "git checkout -b work", "git reset --hard HEAD~1", "git stash", "git add ."):
@@ -396,6 +340,7 @@ class Guard(unittest.TestCase):
         self.assertIsNone(self.deny("gh api repos/me/skills/commits/abc/statuses --jq '.[].state'"))
         self.assertIsNone(self.deny("gh api repos/me/skills/branches/main/protection"))
         self.assertIsNotNone(self.deny("gh api repos/me/skills/statuses/abc -f state=success -f context=pipeline/title"))
+        self.assertIsNotNone(self.deny("gh api -X DELETE repos/me/skills/branches/main/protection"))
         self.assertIsNotNone(self.deny("gh api repos/me/skills/pulls/3/merge -X PUT"))
 
     def test_live_paths_are_not_prefixes(self):

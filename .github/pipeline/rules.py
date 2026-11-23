@@ -11,11 +11,13 @@ VERSION_LINE = re.compile(r"""^(?P<head>\s*version:\s*)(?P<q>["']?)(?P<v>\d+(?:\
 # Evidence is posted from the owner's account, so the marker itself has to say who checked: the model and the
 # reasoning effort it ran at. 'unknown' is allowed where a value cannot be had; leaving them out is not.
 MODEL, EFFORT = r"[A-Za-z0-9._:/-]+", r"[A-Za-z0-9._-]+"      # evidence.py checks its values against the same two
-EVIDENCE = re.compile(r"<!-- pipeline-evidence kind=(review|qa) sha=([0-9a-f]{40}) result=(pass|fail)"
+EVIDENCE = re.compile(r"<!-- pipeline-evidence kind=(review|qa) sha=([0-9a-f]{40}) result=(pass|fail|done|skipped)"
                       rf"(?: model=({MODEL})?)?(?: effort=({EFFORT})?)?(?: files=([0-9a-f]{{64}}))? -->")
 UNSIGNED = "unsigned"                # evidence that does not name its model and effort
-EVIDENCE_KINDS = ("review", "qa")    # both are read and shown; only a review is required
-REQUIRED = ("review",)
+EVIDENCE_KINDS = ("review", "qa")
+# What each kind may say. The gate records that a review took place ('done'; a legacy 'pass' counts the same) and
+# asks for a qa report that passed or for a reason why qa was left out ('skipped'). A 'fail' blocks in both.
+RESULTS = {"review": ("done", "pass", "fail"), "qa": ("pass", "skipped", "fail")}
 PROTECTED = (".github/",)            # the checks that judge a PR
 BUMP = {"fix": 2, "feat": 1, "feat!": 0}   # which part of MAJOR.MINOR.PATCH goes up
 
@@ -145,7 +147,7 @@ def files_hash(files: list[dict]) -> str:
 
 
 def find_evidence(comments: list[dict], head_sha: str, owner: str, content: str | None = None) -> dict[str, str]:
-    """The newest evidence per kind for this PR's content: {'review': 'pass', 'qa': 'fail'}. A comment counts when
+    """The newest evidence per kind for this PR's content: {'review': 'done', 'qa': 'fail'}. A comment counts when
     it names this exact commit, or when its files hash equals `content`, the hash of the PR's changed files now.
     Evidence that does not name its model and effort comes back as 'unsigned' and does not count.
 
@@ -157,6 +159,8 @@ def find_evidence(comments: list[dict], head_sha: str, owner: str, content: str 
             continue
         body = c.get("body") or ""
         m = EVIDENCE.match(body.lstrip())       # the marker opens the comment; one quoted inside a report is text
+        if m and m.group(3) not in RESULTS[m.group(1)]:
+            continue                            # a result the kind does not take says nothing and replaces nothing
         same = m and (m.group(2) == head_sha or (content and m.group(6) == content))
         if same and body.replace(m.group(0), "").strip():
             # a fail always counts; a pass counts only when it names its model and effort
@@ -169,16 +173,17 @@ def check_evidence(found: dict[str, str], needed: bool, undo_of: str | None = No
         return True, f"Undo: the files equal the released {undo_of}"
     if not needed:
         return True, "No skill or pipeline file changed, so no evidence is needed"
-    missing = [k for k in REQUIRED if k not in found]
     failed = [k for k in EVIDENCE_KINDS if found.get(k) == "fail"]
     if failed:
         return False, "Evidence says fail: " + ", ".join(failed)
     unsigned = [k for k in EVIDENCE_KINDS if found.get(k) == UNSIGNED]
     if unsigned:
         return False, "Evidence does not name its model and effort: " + ", ".join(unsigned)
-    if missing:
-        return False, "No evidence for this content: " + ", ".join(missing)
-    return True, "Review passed for this content" + ("; QA passed too" if found.get("qa") == "pass" else "; no QA given")
+    if "review" not in found:
+        return False, "No evidence for this content: review"
+    if "qa" not in found:
+        return False, "No qa entry for this content: post the qa report or say why qa was left out"
+    return True, "Review took place for this content; " + ("QA passed" if found["qa"] == "pass" else "QA was left out, with a reason")
 
 
 def previous_release(tags: list[str], skill: str, current: tuple[int, int, int]) -> tuple[str, tuple] | None:

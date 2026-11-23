@@ -75,14 +75,34 @@ class Evidence(unittest.TestCase):
         found = rules.find_evidence([ev("review"), ev("qa")], SHA, "owner")
         self.assertTrue(rules.check_evidence(found, True)[0])
 
-    def test_a_review_is_enough_and_qa_is_optional(self):
-        ok, text = rules.check_evidence(rules.find_evidence([ev("review")], SHA, "owner"), True)
+    def check(self, *entries):
+        return rules.check_evidence(rules.find_evidence(list(entries), SHA, "owner"), True)
+
+    def test_G_a_review_that_took_place_meets_the_requirement(self):
+        qa = ev("qa")
+        self.assertTrue(self.check(ev("review", result="done"), qa)[0])
+        self.assertFalse(self.check(qa)[0])                                   # no review at all
+        self.assertIn("review", self.check(qa)[1])
+        self.assertTrue(self.check(ev("review", result="pass"), qa)[0])       # legacy pass counts like done
+        self.assertFalse(self.check(ev("review", result="fail"), qa)[0])      # legacy fail still blocks
+        self.assertFalse(self.check(ev("review", result="done"), ev("review", result="fail"), qa)[0])
+        self.assertFalse(self.check(ev("review", result="skipped"), qa)[0])   # a review is not skipped
+
+    def test_H_qa_passes_fails_or_is_left_out_with_a_reason(self):
+        review = ev("review", result="done")
+        self.assertTrue(self.check(review, ev("qa", result="pass"))[0])
+        self.assertFalse(self.check(review, ev("qa", result="fail"))[0])
+        self.assertFalse(self.check(review, ev("qa", result="fail", who=""))[0])          # signed or not
+        ok, text = self.check(review, ev("qa", result="skipped", report="no behaviour changed"))
         self.assertTrue(ok)
-        self.assertIn("no QA given", text)
-        self.assertIn("QA passed", rules.check_evidence(rules.find_evidence([ev("review"), ev("qa")], SHA, "owner"), True)[1])
-        self.assertFalse(rules.check_evidence(rules.find_evidence([ev("qa")], SHA, "owner"), True)[0])
-        self.assertFalse(rules.check_evidence({}, True)[0])
-        self.assertFalse(rules.check_evidence(rules.find_evidence([ev("review"), ev("qa", result="fail")], SHA, "owner"), True)[0])
+        self.assertIn("left out", text)
+        self.assertFalse(self.check(review, ev("qa", result="skipped", report=""))[0])    # no reason: not counted
+        ok, text = self.check(review)
+        self.assertFalse(ok)
+        self.assertIn("post the qa report or say why qa was left out", text)
+        # the newest entry per kind counts
+        self.assertTrue(self.check(review, ev("qa", result="fail"), ev("qa", result="skipped", report="why"))[0])
+        self.assertFalse(self.check(review, ev("qa", result="skipped", report="why"), ev("qa", result="fail"))[0])
 
     def test_evidence_follows_the_content(self):
         files = [{"filename": "demo/SKILL.md", "status": "modified", "sha": "1" * 40},
@@ -92,7 +112,7 @@ class Evidence(unittest.TestCase):
         # given at SHA, read at OTHER: the same files with the same blobs, in any order, still count
         same = rules.files_hash(list(reversed(files)))
         self.assertEqual(rules.find_evidence([hashed("review")], OTHER, "owner", same), {"review": "pass"})
-        self.assertTrue(rules.check_evidence(rules.find_evidence([hashed("review")], OTHER, "owner", same), True)[0])
+        self.assertTrue(rules.check_evidence(rules.find_evidence([hashed("review"), hashed("qa")], OTHER, "owner", same), True)[0])
         # one of the files changed, or one more file in the PR: it no longer counts
         changed = rules.files_hash([dict(files[0], sha="3" * 40), files[1]])
         more = rules.files_hash(files + [{"filename": "demo/new.md", "status": "added", "sha": "4" * 40}])
@@ -159,7 +179,7 @@ class Evidence(unittest.TestCase):
 
 class EvidenceCommand(unittest.TestCase):
     """evidence.py writes the marker the gate reads; model and effort come from the source that knows them."""
-    def post(self, argv, record=None, answer="looked\r\nat  it", reviewed=None, nocommit=False):
+    def post(self, argv, record=None, answer="looked\r\nat  it", reviewed=None, nocommit=False, nofile=False):
         import json
         import tempfile
         import evidence
@@ -184,8 +204,8 @@ class EvidenceCommand(unittest.TestCase):
                 return {"files": reviewed if reviewed is not None else FILES}
             return {"head": {"sha": SHA}, "base": {"ref": "main"}}
 
-        args = ["evidence.py", "--repo", "o/r", "--pr", "1", "--kind", "qa", "--result", "pass",
-                "--file", str(folder / "report.md")] + argv + ([] if "--commit" in argv or nocommit else ["--commit", SHA])
+        args = ["evidence.py", "--repo", "o/r", "--pr", "1", "--kind", "qa", "--result", "pass"]
+        args = (args if not nofile else args[:-4]) + ([] if nofile else ["--file", str(folder / "report.md")]) + argv + ([] if "--commit" in argv or nocommit else ["--commit", SHA])
         with mock.patch.object(evidence, "api", api), mock.patch.object(evidence, "paged", lambda path: FILES), \
                 mock.patch("sys.argv", args), \
                 mock.patch.dict("os.environ", {"ROUTE_RUNS": str(folder / "runs")}), mock.patch("builtins.print"):
@@ -224,6 +244,25 @@ class EvidenceCommand(unittest.TestCase):
 
     def test_the_reviewed_commit_is_required(self):
         self.assertIsInstance(self.post(["--model", "m", "--effort", "e"], nocommit=True), BaseException)
+
+    def test_H_skipped_needs_a_reason_and_no_file(self):
+        who = ["--model", "m", "--effort", "e", "--kind", "qa"]
+        for bad in (["--result", "skipped"], ["--result", "skipped", "--reason", "  "]):
+            self.assertIsInstance(self.post(who + bad, nofile=True), Exception, bad)
+        body = self.post(who + ["--result", "skipped", "--reason", "docs only"], nofile=True)
+        self.assertIn(" result=skipped model=m effort=e ", body)
+        self.assertTrue(body.rstrip().endswith("docs only"))
+        self.assertTrue(self.counts(body))
+        for bad in (["--kind", "review", "--result", "skipped", "--reason", "x"], ["--kind", "review", "--result", "pass"],
+                    ["--kind", "qa", "--result", "done"], ["--kind", "qa", "--result", "pass", "--reason", "x"]):
+            self.assertIsInstance(self.post(["--model", "m", "--effort", "e"] + bad, nofile=True), Exception, bad)
+
+    def test_G_a_review_is_posted_as_done_with_the_report_as_it_came(self):
+        body = self.post(["--model", "m", "--effort", "e", "--kind", "review", "--result", "done"])
+        self.assertIn(" result=done model=m effort=e ", body)
+        self.assertTrue(body.rstrip().endswith("looked at it"))
+        found = rules.find_evidence([{"author": "owner", "body": body}, ev("qa")], SHA, "owner")
+        self.assertTrue(rules.check_evidence(found, True)[0])
 
     def test_values_are_read_from_routes_record(self):
         body = self.post(["--route-run", "RUN1"], {"state": "ok", "model": "gpt-6.2-sol", "effort": "xhigh"})

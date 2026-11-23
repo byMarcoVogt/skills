@@ -3,6 +3,11 @@
     python evidence.py --repo owner/name --pr 12 --commit SHA --kind review --result pass --file report.md \\
                        --model claude-fable-5-2 --effort medium
     python evidence.py --repo owner/name --pr 12 --commit SHA --kind qa --result pass --file report.md --route-run RUN
+    python evidence.py --repo owner/name --pr 12 --commit SHA --kind qa --result skipped --reason "one sentence" \
+                       --model claude-fable-5-2 --effort medium
+
+A review is recorded as 'done': it says a review took place, not that it passed. A qa is 'pass' or 'fail', or
+'skipped' with a reason, which is the report.
 
 --commit is the commit the checker looked at. The report becomes a PR comment whose first line names that commit
 and a hash of its changed files
@@ -62,8 +67,9 @@ def cli() -> int:
     ap.add_argument("--repo", required=True)
     ap.add_argument("--pr", type=int, required=True)
     ap.add_argument("--kind", choices=("review", "qa"), required=True)
-    ap.add_argument("--result", choices=("pass", "fail"), required=True)
-    ap.add_argument("--file", required=True, help="the report: what was looked at or run, and what came out")
+    ap.add_argument("--result", choices=("done", "pass", "fail", "skipped"), required=True)
+    ap.add_argument("--file", help="the report as it came: what was looked at or run, and what came out")
+    ap.add_argument("--reason", help="with --result skipped: one sentence on why qa was left out; it is the report")
     ap.add_argument("--by", default="", help="who gave it, for example 'second Claude agent' or 'GPT through route'")
     ap.add_argument("--route-run", help="the id of the route run that produced the report; model and effort are read from it")
     ap.add_argument("--model", help="the exact model id the checker ran on, or 'unknown'")
@@ -71,9 +77,22 @@ def cli() -> int:
     ap.add_argument("--commit", help="required: the full id of the commit the checker looked at; refused if the PR's files moved since")
     a = ap.parse_args()
 
-    report = Path(a.file).read_text(encoding="utf-8").strip()
-    if not report:
-        raise Failed("The report file is empty")
+    if a.result not in rules.RESULTS[a.kind]:
+        raise Failed(f"A {a.kind} takes --result " + ", ".join(rules.RESULTS[a.kind]))
+    if a.result == "skipped":
+        report = (a.reason or "").strip()
+        if not report:
+            raise Failed("--result skipped needs --reason: one sentence on why qa was left out")
+        if a.file:
+            raise Failed("--result skipped takes no --file: the reason is the report")
+    else:
+        if a.reason:
+            raise Failed("--reason goes only with --result skipped")
+        if not a.file:
+            raise Failed("Give the report with --file")
+        report = Path(a.file).read_text(encoding="utf-8").strip()
+        if not report:
+            raise Failed("The report file is empty")
     if a.route_run:
         if a.model or a.effort:
             raise Failed("Give --route-run or --model with --effort, not both: route's record is the source")

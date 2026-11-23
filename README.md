@@ -4,7 +4,7 @@ Agent Skills I built for my own daily work with Claude Code and Codex. Each one 
 
 | Skill | What it does |
 |---|---|
-| [Think it through](think-it-through) | Interviews you about an idea, plan or decision, one question at a time, until you and the agent reach a shared understanding. |
+| [Think it through](think-it-through) | Turns an idea, a brain dump or a half-formed wish into one plan an agent can build from, asking one real decision at a time. |
 | [Close the gap](close-the-gap) `experimental` | Finds the most worthwhile gap between how you work with AI and the frontier. Then it teaches you about it, from the frontier back to your work. |
 | [Skill trials](skill-trials) | Runs one ablation or variant of a skill through a window of real work, then keeps it, rebuilds only what went missing, or retires the skill. |
 

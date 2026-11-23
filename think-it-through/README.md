@@ -4,28 +4,17 @@
 
 <h4 align="center">What does it do?</h4>
 
-<p align="center">It interviews you about an idea, plan or decision, one question at a time,<br>
-until scattered ideas and thoughts form one shared understanding.</p>
+<p align="center">It turns a raw idea, a brain dump or a half-formed wish into one plan file<br>
+that an agent can build from without the conversation.</p>
 
-<h4 align="center">Why start with alignment?</h4>
+<h4 align="center">How?</h4>
 
-<p align="center">Shared understanding is the baseline for any good work.<br>
-There is no shortcut to it. You reach it only by working closely<br>
-with the agent, question by question, until the picture is clear.</p>
+<p align="center">It reads what exists before it asks. It asks one real decision at a time, with options and a recommendation,<br>
+and names the weakest assumption, a cheaper path and the option to build nothing.<br>
+It stops when the plan holds the intent, a done-when, the touchpoints, how building fits daily use, and the few open questions left.<br>
+When there is nothing to decide and no file was asked for, it says so and writes no plan.</p>
 
-## Real use
-
-**The skill offers options with their trade-offs, and recommends one for each question.**
-
-![Real round: Q7 decided, Q2 delegated, then Q9 to Q11, each with lettered options, a trade-off for each and a recommendation with the assumption it rests on.](../visual-assets/think-it-through/round.webp)
-
-**The skill checks what it can, in your files and on the web, before it asks.**
-
-![Real round: the agent reports what it read and verified in the user's files, a cost table with prices checked on the day (October 2026), then Q13 with three options and a recommendation.](../visual-assets/think-it-through/round-checked.webp)
-
-**The skill shows a picture, explains what it means, and on hard choices proposes asking other models, where you have access to them.**
-
-![Real round: a rendered diagram of a code gate, an explanation of what it shows and why it matters, then Fable's and Astra's views on Q20 and the agent's own pick.](../visual-assets/think-it-through/round-picture-explain.webp)
+It feeds `ship`, a private build pipeline, and works without it: the plan then goes to `plans/` as Markdown.
 
 ## Install
 

@@ -4,7 +4,8 @@ Install (user settings, PreToolUse, matcher "Bash|PowerShell|Edit|Write|Notebook
     python -I <path>/git_guard.py
 
 It only looks at commands and files that concern a pipeline repo (see ~/.claude/skill-pipeline.json), so other
-projects are untouched. The pipeline's own scripts call git and gh themselves, not through a tool, so the hook
+projects are untouched. Each git call is judged by the folder it acts on, and text a command only carries (a
+body, a commit message, a heredoc) is not read as a command. The pipeline's own scripts call git and gh themselves, not through a tool, so the hook
 never sees them: that is what makes merge.py the one way to merge.
 
 Defence in depth, like route's guard: a text match can be spelled around. The boundary is GitHub's branch
@@ -12,6 +13,7 @@ protection where the plan allows it, and the local git hooks.
 """
 import json
 import os
+import posixpath
 import re
 import sys
 from pathlib import Path
@@ -19,33 +21,80 @@ from pathlib import Path
 CONFIG = Path(os.environ.get("SKILL_PIPELINE_CONFIG", Path.home() / ".claude" / "skill-pipeline.json"))
 READ_ONLY = {"status", "log", "diff", "show", "fetch", "pull", "worktree", "branch", "tag", "rev-parse", "ls-files",
              "ls-remote", "remote", "describe", "blame", "grep", "cat-file", "for-each-ref", "merge-base", "config",
-             "shortlog", "reflog", "check-ignore", "rev-list", "name-rev", "version", "help", "ls-tree", "gc"}
-GIT = re.compile(r"""\bgit(?:\.exe)?(?P<opts>(?:\s+(?:-c\s+\S+|-C\s+(?:"[^"]*"|'[^']*'|\S+)|--[a-z-]+(?:=\S+)?))*)\s+(?P<sub>[a-z][a-z-]*)""")
+             "shortlog", "reflog", "check-ignore", "rev-list", "name-rev", "version", "help", "ls-tree", "gc",
+             "show-ref", "archive"}     # archive writes to stdout or to its -o file; an -o inside a live clone is denied
+GIT =re.compile(r"""\bgit(?:\.exe)?(?P<opts>(?:\s+(?:-c\s+\S+|-C\s+(?:"[^"]*"|'[^']*'|\S+)|--[a-z-]+(?:=\S+)?))*)\s+(?P<sub>[a-z][a-z-]*)""")
 DASH_C = re.compile(r"""-C\s+("[^"]*"|'[^']*'|\S+)""")
 CD = re.compile(r"""\b(?:cd|pushd|set-location|sl|chdir)\s+(?:/d\s+)?("[a-z]:/[^"]*"|'[a-z]:/[^']*'|[a-z]:/[^\s;&|)]*)""")
-REMOVE = re.compile(r"\b(rm|rmdir|rd|del|erase|remove-item|ri|move-item|mv|move|ren|rename-item)\b")
+# a removal word on its own (not inside a name like route-move); 'git rm' and 'git mv' are judged per call
+REMOVE = re.compile(r"(?<![\w.-])(rm|rmdir|rd|del|erase|remove-item|ri|move-item|mv|move|ren|rename-item)(?![\w.-])")
+GIT_BEFORE = re.compile(r"\bgit(?:\.exe)?(?:\s+-[cC]\s+\S+)*\s+$")
+SEGMENT = re.compile(r"[^\n;&|]+")
+PIPELINE = re.compile(r"(?:[^\n;&|]|(?<!\|)\|(?!\|))+")     # calls joined by a single pipe: ls <live> | Remove-Item
+SEARCH = re.compile(r"(?<![\w.-])(grep|rg|echo|printf|select-string|write-host|write-output)(?![\w.-])[^\n;&|]*", re.I)
+ABSOLUTE = re.compile(r"[a-z]:/|/|~", re.I)
+OUTPUT = re.compile(r"""(?<!\S)(?:-o|--output)(?:=|\s+)("[^"]*"|'[^']*'|\S+)""")
 
-RULES = [   # (pattern on the lower-cased command, what to do instead)
-    (r"\bgit\b[^\n;&|]*\bpush\b[^\n;&|]*(\s--force(?!-with-lease)|\s-f\b|\s\+\S)",
+# Text a command only carries (a body, a title, a commit message, a heredoc) is blanked before any rule looks,
+# so that writing about a command is not taken for running it. A heredoc or here-string fed to a shell stays.
+# the escape inside double quotes is a backslash in bash and a backtick in PowerShell; '\'' is bash's apostrophe
+QUOTED = {"Bash": r"""("(?:[^"\\]|\\.)*"|'(?:[^']|'\\'')*')""", "PowerShell": r"""("(?:[^"`]|`.|"")*"|'(?:[^']|'')*')"""}
+TEXT_FLAG = r"""((?<!\S)(?:--body|--title|--message|--notes|--subject|--grep|-[bmt])(?:\s+|=))"""
+HEREDOC = re.compile(r"""<<-?[ \t]*(["']?)([A-Za-z_][\w-]*)\1""")
+HERESTRING = re.compile(r"""@(["'])[ \t]*\r?\n.*?\r?\n\1@""", re.S)
+# a shell where a command starts, so a title that names Bash does not count
+SHELL = re.compile(r"(?:^|[|;&(]|\$\()\s*(bash|sh|zsh|dash|pwsh|powershell|cmd|iex|invoke-expression)(\.exe)?(?![\w.-])",
+                   re.I)
+
+# Judged against one git call (lower-cased, text blanked) that acts on a pipeline repo or names one.
+GIT_RULES = [
+    (r"\bpush\b.*(\s--force(?![\w-])|\s-f\b|\s\+\S)",
      "Force pushes are blocked. Use --force-with-lease on your own PR branch if you rebased it."),
-    (r"\bgit\b[^\n;&|]*\bpush\b[^\n;&|]*([\s:]|refs/heads/)(main|master)(?![\w./-])",
+    (r"\bpush\b.*([\s:]|refs/heads/)(main|master)(?![\w./-])",
      "Nobody pushes to main. Push your branch and open a pull request."),
-    (r"--no-verify\b|\bhookspath\b",
+    # reading the setting is fine; setting, unsetting or overriding it is not
+    (r"(?<!\S)--no-verify\b|core\.hookspath\s*="
+     r"|\bconfig\b(\s+(--?[\w-]+(=\S+)?|set))*\s+core\.hookspath\s+(?![\d*]?>)[^\s|;&)>]"
+     r"|(--unset(-all)?|(?<!\S)unset)\s+(--?[\w-]+\s+)*core\.hookspath\b",
      "The local git hooks may not be skipped or re-pointed."),
-    (r"\bgit\b[^\n;&|]*\bpush\b[^\n;&|]*(--tags|--follow-tags|refs/tags)"
-     r"|\bgit\b[^\n;&|]*\btag\s+(?!-l\b|--list\b|-n|--contains|--points-at|--sort)\S"
-     r"|\bgh(\.exe)?\s+release\s+(create|delete|edit)",
+    # a local tag is harmless: the pre-push hook refuses to push any tag
+    (r"\bpush\b.*(--tags|--follow-tags|refs/tags)",
+     "Tags and releases come from the release workflow after a merge, not by hand."),
+    (r"\b(remote\s+(add|remove|rm|rename|set-url)|branch\s+(-d|-m|--delete|--move)\s+(main|master)\b)",
+     "The pipeline repos keep their remote and their main branch."),
+]
+RULES = [   # (pattern on the lower-cased command, text blanked, what to do instead)
+    (r"\bgh(\.exe)?\s+release\s+(create|delete|edit)",
      "Tags and releases come from the release workflow after a merge, not by hand."),
     (r"\bgh(\.exe)?\s+pr\s+merge\b",
      "Merge through the pipeline: python .github/pipeline/merge.py --repo <owner/name> --pr <number>."),
     (r"\bgh(\.exe)?\s+api\b(?=[^\n;&|]*(protection|rulesets|/statuses|actions/permissions|/hooks|/merge\b))"
      r"(?=[^\n;&|]*(\s-x\s*(post|put|patch|delete)|\s--method\b|\s-f\b|\s--field\b|\s--raw-field\b|\s--input\b))"   # reading is fine
      r"|\bgh(\.exe)?\s+(ruleset|secret)\b|\bgh(\.exe)?\s+repo\s+(edit|delete|rename|archive)\b"
-     r"|\bgh(\.exe)?\s+workflow\s+(disable|enable)\b|owner-approved",
-     "Branch protection, statuses, repo settings, secrets and the owner-approved label belong to the owner."),
-    (r"\bgit\b[^\n;&|]*\b(remote\s+(add|remove|rm|rename|set-url)|branch\s+(-d|-m|--delete|--move)\s+(main|master)\b)",
-     "The pipeline repos keep their remote and their main branch."),
+     r"|\bgh(\.exe)?\s+workflow\s+(disable|enable)\b",
+     "Branch protection, statuses, repo settings and secrets belong to the owner."),
 ]
+
+
+def mask(command: str, tool: str = "Bash") -> str:
+    """The command with the text it only carries removed: heredoc and here-string bodies (unless a shell runs
+    them) and the quoted values of --body, --title, -m and the like."""
+    out, pos = [], 0
+    while m := HEREDOC.search(command, pos):
+        eol = command.find("\n", m.end())
+        end = re.compile(r"^[ \t]*" + re.escape(m.group(2)) + r"[ \t]*\r?$", re.M).search(command, eol + 1) if eol >= 0 else None
+        if not end:
+            break
+        line = command[command.rfind("\n", 0, m.start()) + 1:eol]
+        out.append(command[pos:eol + 1] if SHELL.search(line) is None else command[pos:end.start()])
+        pos = end.start()
+    command = "".join(out) + command[pos:]
+    command = HERESTRING.sub(lambda h: h.group(0) if SHELL.search(
+        command[command.rfind("\n", 0, h.start()) + 1:h.start()]) else f"@{h.group(1)}\n{h.group(1)}@", command)
+    quoted = QUOTED.get(tool, QUOTED["Bash"])
+    command = re.sub(TEXT_FLAG + quoted, lambda t: t.group(1) + t.group(2)[0] + "_" + t.group(2)[-1], command, flags=re.S)
+    # a search or an echo only carries its quoted arguments too: grep -rn --include='*.md' "git commit" .
+    return SEARCH.sub(lambda s: re.sub(quoted, lambda q: q.group(0)[0] + "_" + q.group(0)[-1], s.group(0)), command)
 
 
 def norm(text: str) -> str:
@@ -84,29 +133,55 @@ def decide(payload: dict, cfg: dict) -> str | None:
     if tool not in ("Bash", "PowerShell"):
         return None
 
-    raw = (args.get("command") or "").replace("\\", "/")      # case kept: git -C is not git -c
+    raw = mask(args.get("command") or "", tool).replace("\\", "/")      # case kept: git -C is not git -c
     command = norm(raw)
     cwd_live = any(inside(cwd, p) for p in live)
-    in_scope = cwd_live or inside(cwd, worktrees) or any(re.search(at(x), command) for x in live + slugs + linked + [worktrees])
-    if not in_scope:
+    names = lambda text: any(re.search(at(x), text) for x in live + slugs + linked + [worktrees])  # noqa: E731
+    if not (cwd_live or inside(cwd, worktrees) or names(command)):
         return None
     for pattern, reason in RULES:
         if re.search(pattern, command):
             return reason
 
+    def folder(start: int) -> str:
+        """The last absolute cd before this point, else the session's folder."""
+        moves = [c.group(1).strip("\"'") for c in CD.finditer(norm(raw[:start]))]
+        return moves[-1] if moves else cwd
+
     for m in GIT.finditer(raw):
         target = DASH_C.search(m.group("opts"))
-        where = target.group(1).strip("\"'") if target else None
-        if not where:       # no -C: the folder is the last absolute cd before this git, else the session's folder
-            moves = [c.group(1).strip("\"'") for c in CD.finditer(norm(raw[:m.start()]))]
-            where = moves[-1] if moves else cwd
+        where = norm(target.group(1).strip("\"'")) if target else folder(m.start())
+        unknown = "$" in where      # a folder held in a variable is unknown: judged as a pipeline repo
+        if not ABSOLUTE.match(where) and not unknown:      # a relative -C starts from the call's folder
+            where = posixpath.normpath(norm(folder(m.start())).rstrip("/") + "/" + where)
+        call = norm(SEGMENT.match(raw, m.start()).group(0))
+        if inside(where, worktrees) or any(inside(where, p) for p in live) or names(call) or unknown:
+            for pattern, reason in GIT_RULES:       # one call, judged by the folder it acts on
+                if re.search(pattern, call):
+                    return reason
         on_live = any(inside(where, p) for p in live)
-        if on_live and m.group("sub") not in READ_ONLY:
-            return (f"'git {m.group('sub')}' would change the live copy of main. It is read-only here: "
+        sub = m.group("sub")
+        out = OUTPUT.search(call) if sub == "archive" else None
+        if on_live and out:     # an archive written into the live clone would change it
+            path = norm(out.group(1).strip("\"'"))
+            path = path if ABSOLUTE.match(path) else posixpath.normpath(norm(where).rstrip("/") + "/" + path)
+            on_live = any(inside(path, p) for p in live)
+            sub = "archive -o"
+        if on_live and (sub not in READ_ONLY):
+            return (f"'git {sub}' would change the live copy of main. It is read-only here: "
                     "create a worktree (git worktree add) and work on a branch there.")
-    if REMOVE.search(command) and any(re.search(re.escape(norm(x).rstrip("/")) + r"(/[\w.-]+)?[\"']?(\s|$)", command)
-                                      for x in live + linked):
-        return "Deleting or moving a live skill folder or its link is the owner's call."
+
+    live_path = [re.escape(norm(x).rstrip("/")) + r"(/[\w.-]+)?[\"']?(\s|$)" for x in live + linked]
+    for s in PIPELINE.finditer(command):            # a removal is judged within its own call or pipe
+        r = next((r for r in REMOVE.finditer(s.group(0)) if not GIT_BEFORE.search(s.group(0)[:r.start()])), None)
+        if not r:
+            continue
+        moves = [c.group(1).strip("\"'") for c in CD.finditer(command[:s.start()])]   # a cd into a live folder first
+        words = re.sub(r"-(erroraction|ea|warningaction|wa)\s+\S+|\S*>\S*", " ", s.group(0)[r.end():]).split()
+        relative = [a for a in words if not a.startswith("-") and not ABSOLUTE.match(a.strip("\"'"))]
+        after_cd = moves and any(inside(moves[-1], x) for x in live + linked) and (relative or not words)
+        if any(re.search(p, s.group(0)) for p in live_path) or after_cd:
+            return "Deleting or moving a live skill folder or its link is the owner's call."
     return None
 
 

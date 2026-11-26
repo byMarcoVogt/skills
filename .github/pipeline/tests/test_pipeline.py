@@ -772,9 +772,6 @@ class Next(unittest.TestCase):
         self.assertEqual(self.go(ready, take), (1, ""))
 
 
-if __name__ == "__main__":
-    unittest.main()
-
 
 class MergeWithoutGate(unittest.TestCase):
     """merge.py in a repo without a gate: green checks on the head commit, that exact commit, then only a fetch."""
@@ -835,7 +832,7 @@ class MergeWithoutGate(unittest.TestCase):
                               ((("tests", "completed", "success"),), (("ci/other", "pending"),)), \
                               ((("tests", "completed", "success"),), (("ci/other", "error"),)), \
                               ((("tests", "completed", "cancelled"),), ()), \
-                              ((), ()):
+                              ((("tests", "completed", "failure"),), (("tests", "success"),)),                               ((("tests", "completed", "success"), ("tests", "completed", "failure")), ()),                               ((), ()):
             calls, err = self.go(runs=runs, statuses=statuses)
             self.assertIsInstance(err, Exception, (runs, statuses))
             self.assertEqual(self.merged(calls), [], (runs, statuses))
@@ -864,3 +861,7 @@ class GuardWithoutGate(unittest.TestCase):
         reason = deny("gh pr merge 5 --squash")
         self.assertIn(git_guard.MERGE, reason)
         self.assertTrue(Path(git_guard.MERGE).is_absolute())
+
+
+if __name__ == "__main__":
+    unittest.main()

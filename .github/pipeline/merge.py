@@ -57,21 +57,28 @@ def has_gate(repo: str) -> bool:
 
 def checks(repo: str, sha: str) -> dict:
     """Every check run and every status on this commit: {name: (state, text)}. state is success, pending or the
-    red result GitHub gave."""
+    red result GitHub gave. Two checks of the same name both count: one does not hide the other."""
     got, page = {}, 1
+
+    def add(name: str, value: tuple) -> None:
+        key, n = name, 2
+        while key in got:
+            key, n = f"{name} ({n})", n + 1
+        got[key] = value
+
     while True:
         batch = (api(f"repos/{repo}/commits/{sha}/check-runs?per_page=100&page={page}") or {}).get("check_runs", [])
         for c in batch:
             if c["status"] != "completed":
-                got[c["name"]] = ("pending", c["status"])
+                add(c["name"], ("pending", c["status"]))
             else:
-                got[c["name"]] = ("success" if c["conclusion"] in OK else c["conclusion"] or "failure", "")
+                add(c["name"], ("success" if c["conclusion"] in OK else c["conclusion"] or "failure", ""))
         if len(batch) < 100:
             break
         page += 1
     combined = api(f"repos/{repo}/commits/{sha}/status") or {"statuses": []}
     for st in combined["statuses"]:
-        got[st["context"]] = (st["state"], st["description"] or "")
+        add(st["context"], (st["state"], st["description"] or ""))
     return got
 
 

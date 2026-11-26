@@ -772,5 +772,98 @@ class Next(unittest.TestCase):
         self.assertEqual(self.go(ready, take), (1, ""))
 
 
+
+class MergeWithoutGate(unittest.TestCase):
+    """merge.py in a repo without a gate: green checks on the head commit, that exact commit, then only a fetch."""
+    PR = {"merged": False, "state": "open", "title": "fix: x", "head": {"sha": SHA, "ref": "fix-x"}}
+
+    def go(self, runs=(("tests", "completed", "success"),), statuses=(), gate=False, heads=(SHA, SHA), wait=0):
+        import merge
+        from unittest import mock
+        calls, pulls = [], iter([dict(self.PR, head={"sha": h, "ref": "fix-x"}) for h in heads])
+
+        def api(path, method="GET", fields=None, raw=False):
+            calls.append((method, path, fields))
+            if path.endswith("/pulls/5"):
+                return next(pulls)
+            if "/contents/.github/pipeline" in path:
+                return [{"name": "merge.py"}] if gate else None
+            if "/check-runs" in path:
+                return {"check_runs": [{"name": n, "status": s, "conclusion": c} for n, s, c in runs]}
+            if path.endswith("/status"):
+                return {"statuses": [{"context": n, "state": s, "description": ""} for n, s in statuses]}
+            return {}
+
+        def run(args, cwd=None, check=True, stdin=None):
+            calls.append(("RUN", " ".join(args), str(cwd)))
+            return ""
+
+        def not_configured(key):
+            raise merge.Failed("not a pipeline repo")
+
+        with mock.patch.object(merge, "api", api), mock.patch.object(merge, "run", run), \
+                mock.patch.object(merge, "repo_entry", not_configured), mock.patch.object(merge.time, "sleep"), \
+                mock.patch.object(merge, "sync", lambda: self.fail("a repo without a gate is never synced")), \
+                mock.patch("builtins.print"):
+            try:
+                merge.merge("me/jobby", 5, wait=wait, live="C:/Claude/Jobby")
+                return calls, None
+            except merge.Failed as e:
+                return calls, e
+
+    @staticmethod
+    def merged(calls):
+        return [c for c in calls if c[0] == "PUT"]
+
+    def test_green_checks_merge_the_head_commit_and_only_fetch(self):
+        calls, err = self.go(statuses=(("ci/other", "success"),))
+        self.assertIsNone(err)
+        (put,) = self.merged(calls)
+        self.assertEqual(put[2]["sha"], SHA)
+        self.assertEqual(put[2]["merge_method"], "squash")
+        self.assertEqual(put[2]["commit_title"], "fix: x (#5)")
+        git = [c[1] for c in calls if c[0] == "RUN"]
+        self.assertEqual(git, ["git fetch origin --prune --quiet"])
+        self.assertNotIn("tags", " ".join(c[1] for c in calls))
+
+    def test_red_pending_or_missing_checks_are_refused(self):
+        for runs, statuses in ((("tests", "completed", "failure"),), ()), \
+                              ((("tests", "in_progress", None),), ()), \
+                              ((("tests", "completed", "success"),), (("ci/other", "pending"),)), \
+                              ((("tests", "completed", "success"),), (("ci/other", "error"),)), \
+                              ((("tests", "completed", "cancelled"),), ()), \
+                              ((("tests", "completed", "failure"),), (("tests", "success"),)), \
+                              ((("tests", "completed", "failure"), ("tests", "completed", "success")), ()), \
+                              ((), ()):
+            calls, err = self.go(runs=runs, statuses=statuses)
+            self.assertIsInstance(err, Exception, (runs, statuses))
+            self.assertEqual(self.merged(calls), [], (runs, statuses))
+            self.assertFalse([c for c in calls if c[0] == "RUN"], "nothing fetched when nothing merged")
+
+    def test_a_head_that_moved_after_the_check_is_refused(self):
+        calls, err = self.go(heads=(SHA, OTHER))
+        self.assertIn("moved on", str(err))
+        self.assertEqual(self.merged(calls), [])
+
+    def test_a_repo_with_a_gate_takes_the_gate_path(self):
+        import merge
+        from unittest import mock
+        with mock.patch.object(merge, "repo_entry", lambda key: {"slug": key}):
+            self.assertTrue(merge.has_gate("me/skills"))
+        calls, err = self.go(gate=True)
+        self.assertEqual(self.merged(calls), [], "the gate's statuses are missing, so nothing is merged")
+        self.assertIn("gate is not green", str(err))
+
+
+class GuardWithoutGate(unittest.TestCase):
+    def test_merge_py_runs_from_a_worktree_of_a_repo_without_a_gate_and_gh_pr_merge_does_not(self):
+        tree = "C:/Claude/.worktrees/Jobby/fix-x"
+        deny = lambda c: git_guard.decide({"tool_name": "Bash", "tool_input": {"command": c}, "cwd": tree}, CFG)  # noqa: E731
+        self.assertIsNone(deny("python C:/Claude/skills/.github/pipeline/merge.py --repo me/jobby --pr 5"))
+        reason = deny("gh pr merge 5 --squash")
+        self.assertIn(git_guard.MERGE, reason)
+        self.assertTrue(Path(git_guard.MERGE).is_absolute())
+
+
 if __name__ == "__main__":
     unittest.main()

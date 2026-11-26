@@ -14,7 +14,7 @@ and names the weakest assumption, a cheaper path and the option to build nothing
 It stops when the plan holds the intent, a done-when, the touchpoints, how building fits daily use, and the few open questions left.<br>
 When there is nothing to decide and no file was asked for, it says so and writes no plan.</p>
 
-It feeds `ship`, a private build pipeline, and works without it: the plan then goes to `plans/` as Markdown.
+It feeds `ship-it`, a private build pipeline, and works without it: the plan then goes to `plans/` as Markdown.
 
 ## Install
 

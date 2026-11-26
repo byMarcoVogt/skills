@@ -832,7 +832,9 @@ class MergeWithoutGate(unittest.TestCase):
                               ((("tests", "completed", "success"),), (("ci/other", "pending"),)), \
                               ((("tests", "completed", "success"),), (("ci/other", "error"),)), \
                               ((("tests", "completed", "cancelled"),), ()), \
-                              ((("tests", "completed", "failure"),), (("tests", "success"),)),                               ((("tests", "completed", "success"), ("tests", "completed", "failure")), ()),                               ((), ()):
+                              ((("tests", "completed", "failure"),), (("tests", "success"),)), \
+                              ((("tests", "completed", "failure"), ("tests", "completed", "success")), ()), \
+                              ((), ()):
             calls, err = self.go(runs=runs, statuses=statuses)
             self.assertIsInstance(err, Exception, (runs, statuses))
             self.assertEqual(self.merged(calls), [], (runs, statuses))

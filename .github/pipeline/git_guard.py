@@ -19,6 +19,7 @@ import sys
 from pathlib import Path
 
 CONFIG = Path(os.environ.get("SKILL_PIPELINE_CONFIG", Path.home() / ".claude" / "skill-pipeline.json"))
+MERGE = Path(__file__).resolve().with_name("merge.py").as_posix()     # by full path: other repos have no copy
 READ_ONLY = {"status", "log", "diff", "show", "fetch", "pull", "worktree", "branch", "tag", "rev-parse", "ls-files",
              "ls-remote", "remote", "describe", "blame", "grep", "cat-file", "for-each-ref", "merge-base", "config",
              "shortlog", "reflog", "check-ignore", "rev-list", "name-rev", "version", "help", "ls-tree", "gc",
@@ -67,7 +68,7 @@ RULES = [   # (pattern on the lower-cased command, text blanked, what to do inst
     (r"\bgh(\.exe)?\s+release\s+(create|delete|edit)",
      "Tags and releases come from the release workflow after a merge, not by hand."),
     (r"\bgh(\.exe)?\s+pr\s+merge\b",
-     "Merge through the pipeline: python .github/pipeline/merge.py --repo <owner/name> --pr <number>."),
+     f"Merge through the pipeline, also in a repo without a gate: python {MERGE} --repo <owner/name> --pr <number>."),
     (r"\bgh(\.exe)?\s+api\b(?=[^\n;&|]*(protection|rulesets|/statuses|actions/permissions|/hooks|/merge\b))"
      r"(?=[^\n;&|]*(\s-x\s*(post|put|patch|delete)|\s--method\b|\s-f\b|\s--field\b|\s--raw-field\b|\s--input\b))"   # reading is fine
      r"|\bgh(\.exe)?\s+(ruleset|secret)\b|\bgh(\.exe)?\s+repo\s+(edit|delete|rename|archive)\b"

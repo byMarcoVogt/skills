@@ -1,19 +1,19 @@
 ---
 name: think-it-through
-description: Use when the user wants to think something through before it is built - an idea, a plan, a decision, a wish, or a pasted brain dump or voice note to sort out. Also "brainstorm", "rethink", "stress-test", "interview me", "grill me", in any language, mid-session too. Ends in one plan file that ship can build from.
+description: Use when the user wants to think something through before it is built - an idea, a plan, a decision, a wish, or a pasted brain dump or voice note to sort out. Also "brainstorm", "rethink", "stress-test", "interview me", "grill me", in any language, mid-session too. Ends in one plan file that ship-it can build from.
 metadata:
-  version: "2.1.0"
+  version: "2.1.1"
   benchmark: "3946 bytes"
   origin: "Inspired by grill-me, github.com/mattpocock/skills (MIT)"
 ---
 
 # think-it-through
 
-The thinking before `ship`: turn what the user brings into one plan file that a builder can work from without this conversation. Do not build.
+The thinking before `ship-it`: turn what the user brings into one plan file that a builder can work from without this conversation. Do not build.
 
 ## Read first
 
-Before the first question, read the repo and its instructions, the skills it touches, open and recently closed issues, earlier plans, everything the user names (even what the repo calls no source), and what this conversation already settled. Then a few lines: what you read, the goal as you understand it, the decisions you see, and the weakest assumption under the idea. Sort a brain dump; do not echo it. If nothing needs the user's choice and no file was asked for, say so and stop: `ship` builds without a plan.
+Before the first question, read the repo and its instructions, the skills it touches, open and recently closed issues, earlier plans, everything the user names (even what the repo calls no source), and what this conversation already settled. Then a few lines: what you read, the goal as you understand it, the decisions you see, and the weakest assumption under the idea. Sort a brain dump; do not echo it. If nothing needs the user's choice and no file was asked for, say so and stop: `ship-it` builds without a plan.
 
 ## Ask
 
@@ -29,7 +29,7 @@ Early on, offer a cheaper path to the same goal, where there is one, and buildin
 
 ## Done
 
-Stop asking when the plan inputs of `ship` ("Before a plan", "Lane") are settled:
+Stop asking when the plan inputs of `ship-it` ("Lane", and "Before the build" in its `orchestrate.md`) are settled:
 
 - **Intent:** why, what we want, what we do not want.
 - **Done-when:** each criterion binary, with who or what checks it.
@@ -37,11 +37,11 @@ Stop asking when the plan inputs of `ship` ("Before a plan", "Lane") are settled
 - **Live use:** what in daily use the change touches, and whether building may run alongside it.
 - **Open questions:** at most four, each with options and a recommendation, so that "yes to all recommendations" is a full answer.
 
-Slices, steps, budget and models are `ship`'s. Then a fresh agent that never saw the chat reads the plan as its builder: does every decision have a reason, can each done-when be checked while daily use goes on, do two lines contradict, is every point that needs the user a touchpoint, can `ship` build in that repo? Fix what would stop or mislead a builder; one read, not a loop. Say in one line that the plan is ready and where, and stop.
+Slices, steps, budget and models are `ship-it`'s. Then a fresh agent that never saw the chat reads the plan as its builder: does every decision have a reason, can each done-when be checked while daily use goes on, do two lines contradict, is every point that needs the user a touchpoint, can `ship-it` build in that repo? Fix what would stop or mislead a builder; one read, not a loop. Say in one line that the plan is ready and where, and stop.
 
 ## The plan file
 
-Where and in the form `ship`'s Lane names; without `ship`, Markdown in `plans/`. Open questions on top. Every decision with a one-line reason and its source: the user's, dated and as they gave it; delegated by the user; or marked as a proposal. No steps.
+Markdown in `plans/` of the repo it will be built in. Open questions on top. Every decision with a one-line reason and its source: the user's, dated and as they gave it; delegated by the user; or marked as a proposal. No steps.
 
 The trail (pictures, panel results, side questions, drafts) goes into a folder beside the plan, marked at its top as not a source.
 
